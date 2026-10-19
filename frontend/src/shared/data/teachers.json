@@ -1,0 +1,34 @@
+{
+  "teachers": [
+    {
+      "name": "Ahmad Fauzan, S.Pd.",
+      "nip": "198501012010011001",
+      "gender": "Laki-laki",
+      "phone": "+6281234567890"
+    },
+    {
+      "name": "Siti Rahmawati, S.Pd.",
+      "nip": "198706152012022003",
+      "gender": "Perempuan",
+      "phone": "+6281345678901"
+    },
+    {
+      "name": "Budi Santoso, M.Pd.",
+      "nip": "197912202008011004",
+      "gender": "Laki-laki",
+      "phone": "+6281456789012"
+    },
+    {
+      "name": "Dewi Lestari, S.Pd.",
+      "nip": "199003182015032006",
+      "gender": "Perempuan",
+      "phone": "+6281567890123"
+    },
+    {
+      "name": "Eko Prasetyo, S.Kom.",
+      "nip": "198811102014061002",
+      "gender": "Laki-laki",
+      "phone": "+6281678901234"
+    }
+  ]
+}

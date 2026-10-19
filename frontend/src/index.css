@@ -1,0 +1,134 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@import "tailwindcss";
+
+/* ========================================
+   LIGHT MODE
+======================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Surface */
+  --background: #f9fafb;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --border: #e4e4e7;
+
+  /* Brand */
+  --primary: #4f46e5;
+  --secondary: #6366f1;
+  --muted: #71717a;
+  --accent: #4338ca;
+
+  /* Semantic */
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --info: #0284c7;
+
+  --light: #ffffff;
+  --dark: #000000;
+
+  /* Disabled */
+  --disabled: #a1a1aa;
+  --disabled-background: #e4e4e7;
+  --disabled-foreground: #71717a;
+}
+
+/* ========================================
+   DARK MODE
+======================================== */
+
+.dark {
+  color-scheme: dark;
+
+  /* Surface */
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --border: #27272a;
+
+  /* Brand */
+  --primary: #6366f1;
+  --secondary: #818cf8;
+  --muted: #a1a1aa;
+  --accent: #4f46e5;
+
+  /* Semantic */
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --info: #38bdf8;
+
+  --dark: #ffffff;
+  --light: #000000;
+
+  /* Disabled */
+  --disabled: #52525b;
+  --disabled-background: #27272a;
+  --disabled-foreground: #71717a;
+}
+
+/* ========================================
+   TAILWIND THEME
+======================================== */
+
+@theme inline {
+  /* Surface */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+
+  /* Brand */
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+
+  /* Semantic */
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-light: var(--light);
+  --color-dark: var(--dark);
+
+  /* Disabled */
+  --color-disabled: var(--disabled);
+  --color-disabled-background: var(--disabled-background);
+  --color-disabled-foreground: var(--disabled-foreground);
+}
+
+/* ========================================
+   BASE
+======================================== */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}

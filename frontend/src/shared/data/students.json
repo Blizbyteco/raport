@@ -1,0 +1,58 @@
+{
+  "students": [
+    {
+      "id": 1,
+      "name": "Aisyah Putri Ramadhani",
+      "nis": "20250101",
+      "gender": "Perempuan",
+      "className": "XII IPA 1",
+      "major": "MIPA",
+      "status": "Aktif"
+    },
+    {
+      "id": 2,
+      "name": "Bima Aditya Pratama",
+      "nis": "20250102",
+      "gender": "Laki-laki",
+      "className": "XII IPS 2",
+      "major": "IPS",
+      "status": "Aktif"
+    },
+    {
+      "id": 3,
+      "name": "Citra Lestari",
+      "nis": "20250103",
+      "gender": "Perempuan",
+      "className": "XI IPA 2",
+      "major": "MIPA",
+      "status": "Aktif"
+    },
+    {
+      "id": 4,
+      "name": "Daffa Maulana",
+      "nis": "20250104",
+      "gender": "Laki-laki",
+      "className": "X IPA 1",
+      "major": "MIPA",
+      "status": "Aktif"
+    },
+    {
+      "id": 5,
+      "name": "Fajar Nugraha",
+      "nis": "20250105",
+      "gender": "Laki-laki",
+      "className": "XII IPS 1",
+      "major": "IPS",
+      "status": "Tidak aktif"
+    },
+    {
+      "id": 6,
+      "name": "Nabila Khairunnisa",
+      "nis": "20250106",
+      "gender": "Perempuan",
+      "className": "XI Bahasa 1",
+      "major": "Bahasa",
+      "status": "Aktif"
+    }
+  ]
+}

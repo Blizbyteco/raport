@@ -1,0 +1,18 @@
+                    AcademicYear
+                         │
+          ┌──────────────┼──────────────┐
+          ↓              ↓              ↓
+   ClassStudent    ClassSubject    HomeroomTeacher
+          │              │              │
+          ↓              ↓              ↓
+       Student       SchoolClass       User
+                         │
+                         ├──── Subject
+                         │
+                         └──── DailyLesson
+                                  │
+                                  ↓
+                         StudentDailyProgress
+                                  │
+                                  ↓
+                               Student

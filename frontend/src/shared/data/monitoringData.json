@@ -1,0 +1,207 @@
+{
+  "class": {
+    "id": 1,
+    "name": "X RPL 1",
+    "grade": "Kelas X",
+    "major": "Rekayasa Perangkat Lunak",
+    "academicYear": "2026/2027",
+    "semester": "Ganjil",
+    "studentCount": 32
+  },
+
+  "summary": {
+    "average": 81,
+    "totalLessons": 12,
+    "assessedStudents": 28,
+    "attentionStudents": 4
+  },
+
+  "students": [
+    {
+      "id": 1,
+      "nisn": "3123702269",
+      "name": "Ach. Reihan Zainal Rasyid",
+      "average": 86,
+      "status": "Baik",
+      "lastTopic": "Persamaan Linear",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 88,
+          "lessons": 5,
+          "assessed": 5
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 86,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 84,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nisn": "3139665253",
+      "name": "AFIKA",
+      "average": 79,
+      "status": "Baik",
+      "lastTopic": "Teks Deskripsi",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 80,
+          "lessons": 5,
+          "assessed": 5
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 82,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 75,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nisn": "3131968060",
+      "name": "AISYATUL LAYLI",
+      "average": 91,
+      "status": "Sangat Baik",
+      "lastTopic": "Sistem Persamaan",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 94,
+          "lessons": 5,
+          "assessed": 5
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 90,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 89,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nisn": "3124258183",
+      "name": "Ameliatus Soleha",
+      "average": 73,
+      "status": "Perlu Perhatian",
+      "lastTopic": "Fungsi Kuadrat",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 68,
+          "lessons": 5,
+          "assessed": 5
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 78,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 72,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nisn": "144345524",
+      "name": "ASMA'UL KAMILA",
+      "average": 84,
+      "status": "Baik",
+      "lastTopic": "Pecahan dan Bilangan",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 85,
+          "lessons": 5,
+          "assessed": 5
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 83,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 84,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "nisn": "3137714915",
+      "name": "BAQIYAH",
+      "average": 66,
+      "status": "Perlu Perhatian",
+      "lastTopic": "Operasi Aljabar",
+      "subjects": [
+        {
+          "id": 1,
+          "name": "Matematika",
+          "average": 61,
+          "lessons": 5,
+          "assessed": 4
+        },
+        {
+          "id": 2,
+          "name": "Bahasa Indonesia",
+          "average": 70,
+          "lessons": 4,
+          "assessed": 4
+        },
+        {
+          "id": 3,
+          "name": "IPA",
+          "average": 67,
+          "lessons": 3,
+          "assessed": 3
+        }
+      ]
+    }
+  ]
+}

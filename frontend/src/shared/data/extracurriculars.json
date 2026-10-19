@@ -1,0 +1,24 @@
+{
+  "extracurriculars": [
+    {
+      "id": 1,
+      "name": "Pramuka"
+    },
+    {
+      "id": 2,
+      "name": "Palang Merah Remaja"
+    },
+    {
+      "id": 3,
+      "name": "Paskibra"
+    },
+    {
+      "id": 4,
+      "name": "Futsal"
+    },
+    {
+      "id": 5,
+      "name": "Hadis"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "classes": [
+    { "id": 1, "name": "X IPA 1", "students": 32 },
+    { "id": 2, "name": "X IPA 2", "students": 30 },
+    { "id": 3, "name": "XI IPA 1", "students": 31 },
+    { "id": 4, "name": "XI IPS 1", "students": 29 },
+    { "id": 5, "name": "XII IPA 1", "students": 34 },
+    { "id": 6, "name": "XII IPS 1", "students": 28 }
+  ]
+}
