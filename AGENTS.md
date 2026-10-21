@@ -23,13 +23,14 @@ raport/
 ├── api/                    # Laravel backend
 │   ├── docker/entrypoint.sh    # waits for DB, migrate, seed-if-empty, php-fpm
 │   ├── app/
+│   │   ├── Console/Commands/   # db:seed-if-empty (first-boot seeding gate)
 │   │   ├── Http/Controllers/   # 16 controllers (REST resources + reports)
 │   │   ├── Http/Resources/     # API resources
 │   │   ├── Models/             # Eloquent models (see app/Models/relations.txt)
 │   │   └── Providers/
 │   ├── config/             # cors.php, sanctum.php, database.php, session.php
 │   ├── database/
-│   │   ├── migrations/     # 19 migrations
+│   │   ├── migrations/     # 20 migrations
 │   │   └── seeders/        # demo/dummy data (users, students, lessons, ...)
 │   ├── resources/views/
 │   │   └── reports/        # classroom.blade.php, student-report.blade.php (DomPDF)
@@ -58,6 +59,7 @@ raport/
 
 - PHP: the default `php` on PATH is phpbrew 8.3.30 **without `ext-iconv`**, which breaks `composer install`. Use Homebrew PHP instead: `/opt/homebrew/opt/php@8.3/bin/php`. `composer -V` → 2.8.6 at `/usr/local/bin/composer`.
 - Node v24 / npm 11.
+- Docker 28 + Compose v2 available; `docker compose up --build` deploys the full stack (see §4).
 - MySQL/MariaDB **is running** on `127.0.0.1:3306` (root). DB name expected: `api` (per `api/.env.example`).
 - Frontend dev server: `http://localhost:5173` (hard-coded in `api/config/cors.php` allowed_origins).
 - Backend dev server: `http://localhost:8000` (matches `frontend/.env` `VITE_API_URL`).
@@ -89,7 +91,7 @@ cp .env.example .env                                                # configure 
 npm install
 npm run dev        # http://localhost:5173
 npm run build
-npm run lint       # NOTE: currently reports pre-existing errors (unused imports, __dirname)
+npm run lint       # NOTE: currently reports pre-existing errors (unused imports)
 ```
 
 ### Docker (full stack: MySQL + API + SPA)
@@ -119,7 +121,7 @@ npm run build
 
 > Known baseline issues (do not assume your change caused them):
 > - `php artisan test` → `tests/Feature/ExampleTest` fails: route `/` is not defined (404). Expected.
-> - `npm run lint` → ~29 pre-existing errors + 4 warnings (unused vars in teacher/shared components, `__dirname` in `vite.config.js`).
+> - `npm run lint` → ~28 pre-existing errors + 4 warnings (unused vars in teacher/shared components).
 
 ---
 
@@ -134,6 +136,7 @@ npm run build
 - **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`.
 - **Roles**: `users.role` enum = `teacher | admin | leader`. Seeds only create `teacher` users.
 - **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`).
+  - Individual seeders are **not idempotent** (`create()`/`insert()` without dedupe), so re-running `db:seed` on a populated DB fails. `php artisan db:seed-if-empty` runs `DatabaseSeeder` only when `users` is empty; the Docker entrypoint uses it on first boot.
 - **PDF reports**: `barryvdh/laravel-dompdf` rendering `resources/views/reports/*.blade.php` via `ReportController`.
 - **Style**: follow existing controllers/models; run Pint before finishing.
 
@@ -144,7 +147,7 @@ npm run build
 **Always read `frontend/.agents/AGENTS.md` before making UI changes — it is the authoritative rulebook** (feature placement, allowed dirs, no new deps, no arbitrary colors, UI-only scope, etc.). Summary:
 
 - Feature-based structure: `src/features/<feature>/{pages,ui}`. Shared code only in `src/shared/`.
-- Path alias `@/*` → `./src/*`.
+- Path alias `@/*` → `./src/*` (only alias in `vite.config.js`; Vite 8/rolldown rejects non-string alias replacements).
 - Stack: React 19, Vite, Tailwind CSS v4, React Router v8 (`react-router`), TanStack Query v5, axios, react-hook-form, recharts, lucide-react.
 - **Theme tokens live in `src/index.css`** (`@theme inline`): use `bg-background`, `bg-card`, `text-foreground`, `bg-primary`, `text-muted`, `text-danger`, `bg-success`, etc. Never use arbitrary colors like `bg-[#123456]`.
 - Data fetching pattern (the modern features follow it): `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
@@ -171,4 +174,5 @@ Do not introduce new dependencies or a new design system unless explicitly reque
 - Make changes in the correct app (`api/` vs `frontend/`); keep them independent.
 - When changing backend routes/controllers, update `api/.docs/API.md` if behavior/contract changes.
 - After backend changes run `php artisan test` (expect the known `ExampleTest` baseline failure) and Pint; after frontend changes run `npm run lint` and `npm run build`.
+- Migrations must succeed on a **fresh** database (Docker runs `php artisan migrate --force` on every start). Don't create a table that another migration already creates without a `Schema::hasTable()` guard.
 - Never add secrets to the repo; keep credentials in `api/.env` / `frontend/.env`.
