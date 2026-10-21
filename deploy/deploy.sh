@@ -20,4 +20,4 @@ cd "$REPO_DIR"
   docker compose up --build -d
   docker image prune -f
   echo "=== Done $(date -u +%FT%TZ) ==="
-} >>"$LOG" 2>&1
+} 2>&1 | tee -a "$LOG"
