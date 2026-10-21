@@ -11,7 +11,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 SECRET = os.environ["DEPLOY_WEBHOOK_SECRET"].encode()
-REPO_DIR = os.environ.get("DEPLOY_REPO_DIR", "/opt/raport")
+REPO_DIR = os.environ.get("DEPLOY_REPO_DIR", "/home/ubuntu/raport")
 BRANCH = os.environ.get("DEPLOY_BRANCH", "main")
 HOST = os.environ.get("DEPLOY_WEBHOOK_HOST", "127.0.0.1")
 PORT = int(os.environ.get("DEPLOY_WEBHOOK_PORT", "9000"))

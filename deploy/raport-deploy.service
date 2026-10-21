@@ -4,13 +4,13 @@ After=network-online.target docker.service
 Wants=network-online.target docker.service
 
 [Service]
-Environment=DEPLOY_REPO_DIR=/opt/raport
+Environment=DEPLOY_REPO_DIR=/home/ubuntu/raport
 Environment=DEPLOY_BRANCH=main
 Environment=DEPLOY_WEBHOOK_HOST=127.0.0.1
 Environment=DEPLOY_WEBHOOK_PORT=9000
 # Put DEPLOY_WEBHOOK_SECRET=<generated secret> in this file (chmod 600):
 EnvironmentFile=-/etc/raport-deploy.env
-ExecStart=/usr/bin/python3 /opt/raport/deploy/webhook.py
+ExecStart=/usr/bin/python3 /home/ubuntu/raport/deploy/webhook.py
 Restart=always
 RestartSec=3
 

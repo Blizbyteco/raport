@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="${DEPLOY_REPO_DIR:-/opt/raport}"
+REPO_DIR="${DEPLOY_REPO_DIR:-/home/ubuntu/raport}"
 BRANCH="${DEPLOY_BRANCH:-main}"
 LOCK="${DEPLOY_LOCK:-/run/raport-deploy.lock}"
 LOG="${DEPLOY_LOG:-/var/log/raport-deploy.log}"
