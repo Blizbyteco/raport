@@ -50,16 +50,35 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
+          echo "::notice::key fingerprint: $(ssh-keygen -lf ~/.ssh/deploy_key 2>&1 || echo INVALID)"
+          echo "::notice::known_hosts entries: $(wc -l < ~/.ssh/known_hosts)"
+          if ! ssh-keygen -y -P "" -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::DEPLOY_SSH_KEY is not a valid passphrase-less OpenSSH private key (did you paste the .pub by mistake?)"
+            exit 1
+          fi
+
       - name: Deploy
         run: |
-          set -euo pipefail
+          set -uo pipefail
           chmod +x deploy/deploy.sh
+          set +e
           ssh -i ~/.ssh/deploy_key \
             -p "${DEPLOY_PORT:-22}" \
             -o StrictHostKeyChecking=yes \
             -o BatchMode=yes \
+            -o ConnectTimeout=20 \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "DEPLOY_REPO_DIR='${DEPLOY_REPO_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash -s" < deploy/deploy.sh
+            "DEPLOY_REPO_DIR='${DEPLOY_REPO_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash -s" \
+            < deploy/deploy.sh 2> "$RUNNER_TEMP/ssh.err"
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "::error::ssh exited $rc for target (port ${DEPLOY_PORT:-22})"
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done < "$RUNNER_TEMP/ssh.err"
+            exit $rc
+          fi
 
       - name: Smoke test
         continue-on-error: true
