@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to deploy
+        required: false
+        default: main
+      deploy_dir:
+        description: Repo directory on the server
+        required: false
+        default: /home/ubuntu/raport
+
+concurrency:
+  group: deploy-${{ github.event.inputs.branch || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_REPO_DIR: ${{ github.event.inputs.deploy_dir || secrets.DEPLOY_REPO_DIR || '/home/ubuntu/raport' }}
+      DEPLOY_BRANCH: ${{ github.event.inputs.branch || 'main' }}
+      WEB_PORT: ${{ secrets.WEB_PORT }}
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_HOST:-}" ] || [ -z "${DEPLOY_USER:-}" ] || [ -z "${DEPLOY_SSH_KEY:-}" ]; then
+            echo "Missing repository secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY" >&2
+            echo "See deploy/README.md for the full list." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy
+        run: |
+          set -euo pipefail
+          chmod +x deploy/deploy.sh
+          ssh -i ~/.ssh/deploy_key \
+            -p "${DEPLOY_PORT:-22}" \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "DEPLOY_REPO_DIR='${DEPLOY_REPO_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash -s" < deploy/deploy.sh
+
+      - name: Smoke test
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          url="${HEALTHCHECK_URL:-http://${DEPLOY_HOST}:${WEB_PORT:-8080}/up}"
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null "$url"; then
+              echo "App is up: ${url}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "App did not answer ${url} (deploy itself succeeded)." >&2
+          exit 1

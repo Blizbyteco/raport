@@ -20,6 +20,8 @@ Both must be running for the app to work. Auth is **session/cookie based** (Sanc
 ```text
 raport/
 ├── docker-compose.yml      # full-stack deployment (db + api + web/nginx)
+├── .github/workflows/      # ci.yml (tests) + deploy.yml (SSH deploy to the server)
+├── deploy/                 # deploy.sh (run on the server) + README.md (setup guide)
 ├── api/                    # Laravel backend
 │   ├── docker/entrypoint.sh    # waits for DB, migrate, seed-if-empty, php-fpm
 │   ├── app/
@@ -120,8 +122,20 @@ npm run build
 ```
 
 > Known baseline issues (do not assume your change caused them):
-> - `php artisan test` → `tests/Feature/ExampleTest` fails: route `/` is not defined (404). Expected.
 > - `npm run lint` → ~28 pre-existing errors + 4 warnings (unused vars in teacher/shared components).
+> - `vendor/bin/pint --test` → ~20 pre-existing files with style drift (not fixed yet).
+
+### CI / CD (GitHub Actions)
+
+```text
+.github/workflows/
+├── ci.yml      # push/PR on main → API tests (PHP 8.3) + Pint, frontend npm ci/build/lint
+└── deploy.yml  # push to main (or manual dispatch) → SSH to the server → deploy/deploy.sh → docker compose up --build -d
+```
+
+- `deploy.yml` needs repo secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (required) and `DEPLOY_PORT`, `DEPLOY_REPO_DIR`, `WEB_PORT` (optional). Full setup guide: `deploy/README.md`.
+- `deploy/deploy.sh` is piped over SSH from the pushed commit, so script changes apply immediately; it syncs the repo (`git fetch` + `git reset --hard origin/<branch>`) and rebuilds the Docker stack.
+- `deploy/webhook.py` + `deploy/raport-deploy.service` are the legacy push-webhook receiver and are **not** used anymore (it only listened on `127.0.0.1:9000`, unreachable from GitHub).
 
 ---
 
