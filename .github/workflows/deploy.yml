@@ -86,14 +86,15 @@ jobs:
       - name: Smoke test
         continue-on-error: true
         run: |
-          set -euo pipefail
+          set -uo pipefail
           url="${HEALTHCHECK_URL:-http://${DEPLOY_HOST}:${WEB_PORT:-8080}/up}"
-          for i in $(seq 1 30); do
-            if curl -fsS -o /dev/null "$url"; then
+          echo "Checking ${url}"
+          for i in $(seq 1 6); do
+            if curl -fsS --max-time 10 -o /dev/null "$url"; then
               echo "App is up: ${url}"
               exit 0
             fi
             sleep 5
           done
-          echo "App did not answer ${url} (deploy itself succeeded)." >&2
+          echo "::warning::${url} is not reachable from the runner (deploy itself succeeded). Set HEALTHCHECK_URL to a publicly reachable URL."
           exit 1
