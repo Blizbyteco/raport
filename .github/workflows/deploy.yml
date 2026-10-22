@@ -83,18 +83,14 @@ jobs:
             exit $rc
           fi
 
-      - name: Smoke test
-        continue-on-error: true
+      - name: Smoke test (on server)
         run: |
           set -uo pipefail
-          url="${HEALTHCHECK_URL:-http://${DEPLOY_HOST}:${WEB_PORT:-8080}/up}"
-          echo "Checking ${url}"
-          for i in $(seq 1 6); do
-            if curl -fsS --max-time 10 -o /dev/null "$url"; then
-              echo "App is up: ${url}"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::warning::${url} is not reachable from the runner (deploy itself succeeded). Set HEALTHCHECK_URL to a publicly reachable URL."
-          exit 1
+          url="${HEALTHCHECK_URL:-http://127.0.0.1:${WEB_PORT:-8080}/up}"
+          echo "Checking ${url} from the server"
+          ssh -i ~/.ssh/deploy_key \
+            -p "${DEPLOY_PORT:-22}" \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "for i in \$(seq 1 10); do if curl -fsS --max-time 5 -o /dev/null '$url'; then echo \"healthy: $url\"; exit 0; fi; sleep 3; done; echo \"unhealthy: $url\" >&2; exit 1"
