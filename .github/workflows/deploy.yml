@@ -52,8 +52,11 @@ jobs:
 
           echo "::notice::key fingerprint: $(ssh-keygen -lf ~/.ssh/deploy_key 2>&1 || echo INVALID)"
           echo "::notice::known_hosts entries: $(wc -l < ~/.ssh/known_hosts)"
-          if ! ssh-keygen -y -P "" -f ~/.ssh/deploy_key >/dev/null 2>&1; then
-            echo "::error::DEPLOY_SSH_KEY is not a valid passphrase-less OpenSSH private key (did you paste the .pub by mistake?)"
+          echo "::notice::key first line: $(head -1 ~/.ssh/deploy_key | cut -c1-64)"
+          echo "::notice::key lines: $(wc -l < ~/.ssh/deploy_key)"
+          if ! ssh-keygen -y -P "" -f ~/.ssh/deploy_key >/dev/null 2>"$RUNNER_TEMP/key.err"; then
+            echo "::error::DEPLOY_SSH_KEY is not a valid passphrase-less OpenSSH private key: $(head -1 "$RUNNER_TEMP/key.err")"
+            echo "::error::Paste the PRIVATE key (cat ~/.ssh/raport_deploy), not the .pub file."
             exit 1
           fi
 
