@@ -171,6 +171,7 @@ Examples:
 - Card
 - EmptyState
 - LoadingState
+- Tooltip
 
 Do not put feature-specific components inside `shared/ui`.
 
@@ -384,6 +385,8 @@ Do not create a mock API layer.
 Do not create a service solely for mock data.
 
 Do not create a global mock store.
+
+Exception: the admin `students` and `teachers` features keep their mock data in a small in-memory store (`features/<feature>/ui/<entity>List.js`) so edits/deletes survive navigation within the SPA. Keep it feature-local and do not connect it to the API.
 
 ## 17. Existing Code
 

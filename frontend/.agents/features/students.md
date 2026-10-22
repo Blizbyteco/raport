@@ -27,8 +27,9 @@ The current task scope is UI only.
 The students feature contains:
 
 - Students list page
-- Student detail page
-- Student create/edit UI when requested
+- Combined student detail/edit page at `/dashboard/students/:slug` (slug from the student name)
+- Student create UI
+- Student import UI
 
 ## Students List UI
 
@@ -46,7 +47,16 @@ The list page should provide a visual interface for:
 
 Use mock/static data when necessary.
 
-Do not implement actual CRUD functionality.
+The list and detail pages support local delete/edit via the feature-local mock store (`src/features/students/ui/studentList.js`). Do not implement API-backed CRUD.
+
+## Student Detail Page
+
+The detail page doubles as the edit UI:
+
+- Fields are locked (disabled) by default.
+- "Ubah data" unlocks all fields; "Batal" reverts and "Simpan" commits to the local mock store.
+- Delete is available from the table row and from the detail page, both with a confirmation modal.
+- Row actions use Tooltip labels ("Ubah data Siswa", "Hapus data siswa").
 
 ## Student Data
 
