@@ -102,5 +102,18 @@ class UserSeeder extends Seeder
                 ]
             );
         }
+
+        User::updateOrCreate(
+            [
+                'username' => 'admin',
+            ],
+            [
+                'nip' => '900000000000000000',
+                'password' => Hash::make('password'),
+                'full_name' => 'Administrator',
+                'role' => 'admin',
+                'is_active' => true,
+            ]
+        );
     }
 }
