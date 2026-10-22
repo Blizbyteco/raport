@@ -7,23 +7,21 @@ import Input from "@/shared/ui/form/Input";
 import Select from "@/shared/ui/form/Select";
 import Modal from "@/shared/ui/overlay/Modal";
 
-import { students } from "@/shared/data/students.json";
 import { classes } from "@/shared/data/classes.json";
 import StudentTable from "../ui/StudentTable";
+import { getStudents, removeStudent } from "../ui/studentList";
 import PageHeader from "@/shared/layout/PageHeader";
 
 const StudentsPage = () => {
   const navigate = useNavigate();
 
-  const [studentList, setStudentList] = useState(students);
+  const [studentList, setStudentList] = useState(() => getStudents());
   const [studentToDelete, setStudentToDelete] = useState(null);
 
   const handleDelete = () => {
     if (!studentToDelete) return;
 
-    setStudentList((current) =>
-      current.filter((student) => student.nis !== studentToDelete.nis),
-    );
+    setStudentList(removeStudent(studentToDelete.nis));
     setStudentToDelete(null);
   };
 

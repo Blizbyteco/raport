@@ -1,4 +1,4 @@
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
 import Button from "@/shared/ui/button/Button";
@@ -40,22 +40,13 @@ const TeacherTable = ({ teachers, onDelete }) => {
               <Table.Cell>{teacher.phone}</Table.Cell>
               <Table.Cell>
                 <div className="flex items-center gap-2">
-                  <Tooltip label="Lihat detail guru">
-                    <Button
-                      variant="ghost"
-                      size="S"
-                      icon={Eye}
-                      iconOnly
-                      onClick={() => navigate(slug)}
-                      aria-label={`Lihat detail ${teacher.name}`}
-                    />
-                  </Tooltip>
                   <Tooltip label="Ubah data Guru">
                     <Button
                       variant="ghost"
                       size="S"
                       icon={Pencil}
                       iconOnly
+                      onClick={() => navigate(slug)}
                       aria-label={`Ubah data ${teacher.name}`}
                     />
                   </Tooltip>

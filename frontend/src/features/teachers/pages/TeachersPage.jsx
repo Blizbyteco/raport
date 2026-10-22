@@ -7,21 +7,19 @@ import Modal from "@/shared/ui/overlay/Modal";
 import { useNavigate } from "react-router";
 
 import TeacherTable from "../ui/TeacherTable";
-import { teachers } from "@/shared/data/teachers.json";
+import { getTeachers, removeTeacher } from "../ui/teacherList";
 import PageHeader from "@/shared/layout/PageHeader";
 
 const TeachersPage = () => {
   const navigate = useNavigate();
 
-  const [teacherList, setTeacherList] = useState(teachers);
+  const [teacherList, setTeacherList] = useState(() => getTeachers());
   const [teacherToDelete, setTeacherToDelete] = useState(null);
 
   const handleDelete = () => {
     if (!teacherToDelete) return;
 
-    setTeacherList((current) =>
-      current.filter((teacher) => teacher.nip !== teacherToDelete.nip),
-    );
+    setTeacherList(removeTeacher(teacherToDelete.nip));
     setTeacherToDelete(null);
   };
 
