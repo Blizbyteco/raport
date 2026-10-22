@@ -309,6 +309,8 @@ unless explicitly requested by the user.
 
 Use Lucide icons for interface icons.
 
+Wrap icon-only edit/delete actions with the shared `Tooltip` (`src/shared/ui/feedback/Tooltip.jsx`) using labels like `Ubah data ...` / `Hapus data ...`; do not rely on native `title` attributes.
+
 Example:
 
 ```jsx

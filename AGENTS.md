@@ -173,6 +173,7 @@ npm run build
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). Login at `/login`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
+- Admin edit/delete actions (tables and cards) use the shared `Tooltip` for labels (`Ubah data ...`, `Hapus data ...`) instead of native `title` attributes.
 
 Do not introduce new dependencies or a new design system unless explicitly requested.
 
