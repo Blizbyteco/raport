@@ -120,7 +120,42 @@ Log file: `$HOME/.cache/raport-deploy.log` (override with `DEPLOY_LOG`). A lock 
 
 ---
 
-## 6. Troubleshooting
+## 6. Exposing the app on port 80
+
+`docker-compose.yml` publishes the SPA on `${WEB_PORT:-8080}`. Port 8080 is usually **not** open in the cloud
+security group, so put a reverse proxy on port 80 in front of it. On the server, Caddy:
+
+```caddyfile
+# /etc/caddy/Caddyfile
+api.qpos.shop:80 {
+    reverse_proxy localhost:8000
+}
+
+:80 {
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl reload caddy
+```
+
+Then make Laravel/Sanctum accept that origin in the server-side `.env` (gitignored, so deploys never touch it):
+
+```dotenv
+APP_URL=http://YOUR_HOST
+SESSION_DOMAIN=
+SANCTUM_STATEFUL_DOMAINS=YOUR_HOST,localhost,localhost:8080,127.0.0.1,127.0.0.1:8080
+```
+
+Apply with `docker compose up -d` (recreates the API container). For a real domain, use `your-domain { reverse_proxy 127.0.0.1:8080 }` and Caddy provisions HTTPS automatically (open 443 in the security group).
+
+Set the `HEALTHCHECK_URL` secret to e.g. `http://YOUR_HOST/up` if you also want the workflow to check the public path.
+
+---
+
+## 7. Troubleshooting
 
 | Symptom | Fix |
 | ------- | --- |
