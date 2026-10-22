@@ -107,7 +107,8 @@ docker compose down -v        # stop and wipe the database
 - On API container start, `api/docker/entrypoint.sh` waits for MySQL, runs `php artisan migrate --force`, generates `APP_KEY` if missing, then runs `php artisan db:seed-if-empty` (new artisan command: full `DatabaseSeeder` chain, skipped when users already exist — seeders are not idempotent).
 - Frontend is built with `VITE_API_URL=""` (same-origin); the bundled nginx (`frontend/docker/nginx.conf`) serves the SPA and proxies `/api`, `/sanctum`, `/up` and `POST /login` to the PHP-FPM container.
 - Optional overrides (ports, passwords, `APP_KEY`): copy `docker-compose.env.example` to `.env` at the repo root.
-- Demo login after first boot: usernames from `UserSeeder` (e.g. `ach.ubaidillah`), password `password`.
+- Demo login after first boot: usernames from `UserSeeder` (e.g. `ach.ubaidillah`), password `password`. An admin account is also seeded: username `admin`, password `password`.
+- Seeding only happens on a **first boot** (`db:seed-if-empty` skips when `users` exist). On an already-seeded database, new/changed users require a manual run: `docker compose exec api php artisan db:seed --class=UserSeeder` (`UserSeeder` is idempotent via `updateOrCreate`).
 
 ### Tests / Quality
 
@@ -149,8 +150,9 @@ npm run build
 - **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars) plus nested/manual routes for placements, lessons, progress and reports. See `routes/api.php` and `.docs/API.md`.
 - **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`.
 - **Roles**: `users.role` enum = `teacher | admin | leader`. Seeds only create `teacher` users.
-- **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`).
-  - Individual seeders are **not idempotent** (`create()`/`insert()` without dedupe), so re-running `db:seed` on a populated DB fails. `php artisan db:seed-if-empty` runs `DatabaseSeeder` only when `users` is empty; the Docker entrypoint uses it on first boot.
+- **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`). `UserSeeder` also creates an admin account: username `admin`, password `password`, role `admin`.
+  - Individual seeders are **not idempotent** (`create()`/`insert()` without dedupe), so re-running `db:seed` on a populated DB fails. Exception: `UserSeeder` uses `updateOrCreate` and is safe to re-run.
+  - `php artisan db:seed-if-empty` runs `DatabaseSeeder` only when `users` is empty; the Docker entrypoint uses it on first boot. A redeploy therefore does **not** create new users on an existing DB — run `php artisan db:seed --class=UserSeeder` manually for that.
 - **PDF reports**: `barryvdh/laravel-dompdf` rendering `resources/views/reports/*.blade.php` via `ReportController`.
 - **Style**: follow existing controllers/models; run Pint before finishing.
 
