@@ -169,7 +169,7 @@ npm run build
 - Data fetching pattern (the modern features follow it): `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
   - Example: `academic-year`, `class`, `subjects`, `teacher`.
   - Legacy features (`students`, `teachers`, `extracurriculars`, places with JSON mock data in `src/shared/data/`) still render static mock data and are not yet wired to the API.
-  - Admin `students`/`teachers` have slug-based detail pages (`/dashboard/students/:slug`, `/dashboard/teachers/:slug`, slug via `src/shared/lib/slugify.js`). Delete uses a confirmation modal and local component state only (no API persistence yet).
+  - Admin `students`/`teachers` have slug-based combined view/edit pages (`/dashboard/students/:slug`, `/dashboard/teachers/:slug`, slug via `src/shared/lib/slugify.js`). Fields are locked until "Ubah data" is clicked. Delete is available both in the table row and on the detail page, each with a confirmation modal. Data is held in in-memory mock stores (`features/students/ui/studentList.js`, `features/teachers/ui/teacherList.js`) — no API persistence yet.
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). Login at `/login`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
