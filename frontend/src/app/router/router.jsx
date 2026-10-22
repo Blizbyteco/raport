@@ -5,9 +5,11 @@ import ProtectedRoute from "./ProtectedRoute";
 
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import StudentsPage from "@/features/students/pages/StudentsPage";
+import StudentDetailPage from "@/features/students/pages/StudentDetailPage";
 import CreateStudentPage from "@/features/students/pages/CreateStudentPage";
 import ImportStudentsPage from "@/features/students/pages/ImportStudentsPage";
 import TeachersPage from "@/features/teachers/pages/TeachersPage";
+import TeacherDetailPage from "@/features/teachers/pages/TeacherDetailPage";
 import CreateTeacherPage from "@/features/teachers/pages/CreateTeacherPage";
 import ImportTeachersPage from "@/features/teachers/pages/ImportTeachersPage";
 import ClassPage from "@/features/class/pages/ClassPage";
@@ -59,12 +61,14 @@ const Routers = () => {
                 <Route index element={<StudentsPage />} />
                 <Route path="create" element={<CreateStudentPage />} />
                 <Route path="import" element={<ImportStudentsPage />} />
+                <Route path=":slug" element={<StudentDetailPage />} />
               </Route>
 
               <Route path="teachers">
                 <Route index element={<TeachersPage />} />
                 <Route path="create" element={<CreateTeacherPage />} />
                 <Route path="import" element={<ImportTeachersPage />} />
+                <Route path=":slug" element={<TeacherDetailPage />} />
               </Route>
 
               <Route path="classes">

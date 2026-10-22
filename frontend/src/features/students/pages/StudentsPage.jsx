@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Download, FileSpreadsheet, Plus, Search } from "lucide-react";
+import { Download, FileSpreadsheet, Plus, Search, Trash2 } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
 import Select from "@/shared/ui/form/Select";
+import Modal from "@/shared/ui/overlay/Modal";
 
 import { students } from "@/shared/data/students.json";
 import { classes } from "@/shared/data/classes.json";
@@ -12,6 +14,18 @@ import PageHeader from "@/shared/layout/PageHeader";
 
 const StudentsPage = () => {
   const navigate = useNavigate();
+
+  const [studentList, setStudentList] = useState(students);
+  const [studentToDelete, setStudentToDelete] = useState(null);
+
+  const handleDelete = () => {
+    if (!studentToDelete) return;
+
+    setStudentList((current) =>
+      current.filter((student) => student.nis !== studentToDelete.nis),
+    );
+    setStudentToDelete(null);
+  };
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -57,8 +71,34 @@ const StudentsPage = () => {
           </div>
         </div>
 
-        <StudentTable students={students} />
+        <StudentTable students={studentList} onDelete={setStudentToDelete} />
       </section>
+
+      <Modal
+        open={Boolean(studentToDelete)}
+        onClose={() => setStudentToDelete(null)}
+        title="Hapus data siswa"
+        description={
+          studentToDelete
+            ? `Data ${studentToDelete.name} akan dihapus dari daftar siswa.`
+            : undefined
+        }
+        size="S"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setStudentToDelete(null)}>
+              Batal
+            </Button>
+            <Button variant="danger" icon={Trash2} onClick={handleDelete}>
+              Hapus
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Tindakan ini tidak dapat dibatalkan.
+        </p>
+      </Modal>
     </div>
   );
 };

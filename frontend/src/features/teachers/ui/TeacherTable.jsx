@@ -1,8 +1,14 @@
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+
 import Button from "@/shared/ui/button/Button";
 import Table from "@/shared/ui/data-display/Table";
-import { Pencil, Trash2 } from "lucide-react";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
+import slugify from "@/shared/lib/slugify";
 
-const TeacherTable = ({ teachers }) => {
+const TeacherTable = ({ teachers, onDelete }) => {
+  const navigate = useNavigate();
+
   return (
     <Table>
       <Table.Header>
@@ -16,38 +22,58 @@ const TeacherTable = ({ teachers }) => {
       </Table.Header>
 
       <Table.Body>
-        {teachers.map((teacher) => (
-          <Table.Row key={teacher.nip}>
-            <Table.Cell>
-              <p className="truncate font-semibold text-text-body">
-                {teacher.name}
-              </p>
-            </Table.Cell>
-            <Table.Cell>{teacher.nip}</Table.Cell>
-            <Table.Cell>{teacher.gender}</Table.Cell>
-            <Table.Cell>{teacher.phone}</Table.Cell>
-            <Table.Cell>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="S"
-                  icon={Pencil}
-                  iconOnly
-                  title={`Edit ${teacher.name}`}
-                  aria-label={`Edit ${teacher.name}`}
-                />
-                <Button
-                  variant="ghost"
-                  size="S"
-                  icon={Trash2}
-                  iconOnly
-                  title={`Hapus ${teacher.name}`}
-                  aria-label={`Hapus ${teacher.name}`}
-                />
-              </div>
-            </Table.Cell>
-          </Table.Row>
-        ))}
+        {teachers.map((teacher) => {
+          const slug = slugify(teacher.name);
+
+          return (
+            <Table.Row key={teacher.nip}>
+              <Table.Cell>
+                <Link
+                  to={slug}
+                  className="block max-w-56 truncate font-semibold text-text-body transition-colors hover:text-primary hover:underline"
+                >
+                  {teacher.name}
+                </Link>
+              </Table.Cell>
+              <Table.Cell>{teacher.nip}</Table.Cell>
+              <Table.Cell>{teacher.gender}</Table.Cell>
+              <Table.Cell>{teacher.phone}</Table.Cell>
+              <Table.Cell>
+                <div className="flex items-center gap-2">
+                  <Tooltip label="Lihat detail guru">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Eye}
+                      iconOnly
+                      onClick={() => navigate(slug)}
+                      aria-label={`Lihat detail ${teacher.name}`}
+                    />
+                  </Tooltip>
+                  <Tooltip label="Ubah data Guru">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Pencil}
+                      iconOnly
+                      aria-label={`Ubah data ${teacher.name}`}
+                    />
+                  </Tooltip>
+                  <Tooltip label="Hapus data guru">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => onDelete?.(teacher)}
+                      aria-label={`Hapus data ${teacher.name}`}
+                    />
+                  </Tooltip>
+                </div>
+              </Table.Cell>
+            </Table.Row>
+          );
+        })}
 
         {!teachers.length && (
           <Table.Row>
