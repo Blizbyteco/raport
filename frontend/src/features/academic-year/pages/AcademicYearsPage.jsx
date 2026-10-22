@@ -8,13 +8,25 @@ import AcademicYearBanner from "../ui/AcademicYearBanner";
 import AcademicYearTable from "../ui/AcademicYearTable";
 
 import useAcademicYears from "../hooks/useAcademicYears";
+import useDeleteAcademicYear from "../hooks/useDeleteAcademicYear";
 
 const AcademicYearsPage = () => {
   const navigate = useNavigate();
 
   const { data, isLoading, isError } = useAcademicYears();
+  const deleteMutation = useDeleteAcademicYear();
 
   const academicYears = data?.data ?? [];
+
+  const handleDelete = (academicYear) => {
+    const confirmed = window.confirm(
+      `Hapus tahun akademik ${academicYear.start_year}/${academicYear.end_year}?`,
+    );
+
+    if (!confirmed) return;
+
+    deleteMutation.mutate(academicYear.id);
+  };
 
   return (
     <div className="space-y-6">
@@ -35,6 +47,7 @@ const AcademicYearsPage = () => {
         data={academicYears}
         isLoading={isLoading}
         isError={isError}
+        onDelete={handleDelete}
       />
     </div>
   );

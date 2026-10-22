@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import { useForm } from "react-hook-form";
 

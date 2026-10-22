@@ -1,4 +1,5 @@
 import Button from "@/shared/ui/button/Button";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
 
 const SubjectCard = ({ subject, onEdit, onDelete }) => {
@@ -15,20 +16,26 @@ const SubjectCard = ({ subject, onEdit, onDelete }) => {
       </div>
 
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <Button
-          onClick={onEdit}
-          variant="ghost"
-          size="S"
-          icon={Pencil}
-          iconOnly
-        />
-        <Button
-          onClick={onDelete}
-          variant="ghost"
-          size="S"
-          icon={Trash2}
-          iconOnly
-        />
+        <Tooltip label="Ubah data mata pelajaran">
+          <Button
+            onClick={onEdit}
+            variant="ghost"
+            size="S"
+            icon={Pencil}
+            iconOnly
+            aria-label={`Ubah data ${subject.name}`}
+          />
+        </Tooltip>
+        <Tooltip label="Hapus data mata pelajaran">
+          <Button
+            onClick={onDelete}
+            variant="ghost"
+            size="S"
+            icon={Trash2}
+            iconOnly
+            aria-label={`Hapus data ${subject.name}`}
+          />
+        </Tooltip>
       </div>
     </div>
   );

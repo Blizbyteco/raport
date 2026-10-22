@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router";
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
 import Table from "@/shared/ui/data-display/Table";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { students } from "@/shared/data/students.json";
 
 const classData = {
@@ -159,15 +160,16 @@ const StudentPlacementDetailPage = () => {
               <Table.Cell>{student.nis}</Table.Cell>
               <Table.Cell>{student.gender}</Table.Cell>
               <Table.Cell>
-                <Button
-                  variant="ghost"
-                  size="S"
-                  icon={Trash2}
-                  iconOnly
-                  title={`Mutasi ${student.name}`}
-                  aria-label={`Mutasi ${student.name}`}
-                  className="hover:text-danger"
-                />
+                <Tooltip label="Mutasi siswa">
+                  <Button
+                    variant="ghost"
+                    size="S"
+                    icon={Trash2}
+                    iconOnly
+                    aria-label={`Mutasi ${student.name}`}
+                    className="hover:text-danger"
+                  />
+                </Tooltip>
               </Table.Cell>
             </Table.Row>
           ))}

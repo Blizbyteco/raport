@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
@@ -128,7 +128,12 @@ const ClassPage = () => {
       ) : data.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.map((classItem) => (
-            <ClassCard item={classItem} />
+            <ClassCard
+              key={classItem.id}
+              item={classItem}
+              onEdit={() => openEditModal(classItem)}
+              onDelete={() => handleDelete(classItem)}
+            />
           ))}
         </div>
       ) : (

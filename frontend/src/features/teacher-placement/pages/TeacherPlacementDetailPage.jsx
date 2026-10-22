@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
+
+import Button from "@/shared/ui/button/Button";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 import {
   ArrowLeft,
   BookOpen,
@@ -468,14 +471,17 @@ const TeacherPlacementDetailPage = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => deleteAssignment(assignment.id)}
-                    title="Hapus penugasan"
-                    className="inline-flex h-9 w-9 items-center justify-center self-end rounded-lg border border-border text-muted transition hover:border-red-500/30 hover:bg-red-500/5 hover:text-red-500 sm:self-auto"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <Tooltip label="Hapus penugasan">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => deleteAssignment(assignment.id)}
+                      aria-label="Hapus penugasan"
+                      className="hover:text-danger"
+                    />
+                  </Tooltip>
                 </div>
               );
             })}

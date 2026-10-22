@@ -1,7 +1,8 @@
 import Button from "@/shared/ui/button/Button";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { Pencil, SportShoe, Trash2 } from "lucide-react";
 
-const ExtracurricularCard = ({ excul }) => {
+const ExtracurricularCard = ({ excul, onEdit, onDelete }) => {
   return (
     <div className="group flex min-h-16 items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 transition-all duration-200 hover:ring-1 ring-primary">
       <div className="flex min-w-0 items-center gap-3">
@@ -15,8 +16,26 @@ const ExtracurricularCard = ({ excul }) => {
       </div>
 
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <Button variant="ghost" size="S" icon={Pencil} iconOnly />
-        <Button variant="ghost" size="S" icon={Trash2} iconOnly />
+        <Tooltip label="Ubah data ekstrakurikuler">
+          <Button
+            variant="ghost"
+            size="S"
+            icon={Pencil}
+            iconOnly
+            onClick={onEdit}
+            aria-label={`Ubah data ${excul.name}`}
+          />
+        </Tooltip>
+        <Tooltip label="Hapus data ekstrakurikuler">
+          <Button
+            variant="ghost"
+            size="S"
+            icon={Trash2}
+            iconOnly
+            onClick={onDelete}
+            aria-label={`Hapus data ${excul.name}`}
+          />
+        </Tooltip>
       </div>
     </div>
   );

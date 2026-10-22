@@ -4,9 +4,10 @@ import { useNavigate } from "react-router";
 import Button from "@/shared/ui/button/Button";
 import Badge from "@/shared/ui/data-display/Badge";
 import Table from "@/shared/ui/data-display/Table";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { formatDate } from "@/shared/lib/formatDate";
 
-const AcademicYearTable = ({ data, isLoading, isError }) => {
+const AcademicYearTable = ({ data, isLoading, isError, onDelete }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -98,15 +99,27 @@ const AcademicYearTable = ({ data, isLoading, isError }) => {
                 {/* Aksi */}
                 <Table.Cell>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="S"
-                      icon={Pencil}
-                      iconOnly
-                      onClick={() => navigate(`${academicYear.id}/edit`)}
-                    />
+                    <Tooltip label="Ubah data tahun akademik">
+                      <Button
+                        variant="ghost"
+                        size="S"
+                        icon={Pencil}
+                        iconOnly
+                        onClick={() => navigate(`${academicYear.id}/edit`)}
+                        aria-label={`Ubah data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                      />
+                    </Tooltip>
 
-                    <Button variant="ghost" size="S" icon={Trash2} iconOnly />
+                    <Tooltip label="Hapus data tahun akademik">
+                      <Button
+                        variant="ghost"
+                        size="S"
+                        icon={Trash2}
+                        iconOnly
+                        onClick={() => onDelete?.(academicYear)}
+                        aria-label={`Hapus data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                      />
+                    </Tooltip>
                   </div>
                 </Table.Cell>
               </Table.Row>

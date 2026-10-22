@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { deleteAcademicYear } from "@/features/academic-year/api/deleteAcademicYear";
+import { deleteAcademicYear } from "@/features/academic-year/api/academicApi";
 
 const useDeleteAcademicYear = () => {
   const queryClient = useQueryClient();
