@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router";
 
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import RootRedirect from "./RootRedirect";
 
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import StudentsPage from "@/features/students/pages/StudentsPage";
@@ -40,6 +41,7 @@ const Routers = () => {
     <BrowserRouter>
       <Routes>
         {/* Public */}
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Admin */}
