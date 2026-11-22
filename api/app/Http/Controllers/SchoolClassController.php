@@ -7,13 +7,28 @@ use Illuminate\Http\Request;
 
 class SchoolClassController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(
-            SchoolClass::orderBy('grade_level')
-                ->orderBy('name')
-                ->get()
-        );
+        $classes = SchoolClass::query()
+            ->with([
+                'homeroomTeachers' => function ($query) {
+                    $query->with('teacher')->latest('id');
+                },
+            ])
+            ->withCount([
+                'classStudents as students_count' => fn ($query) => $query->where('status', 'AKTIF'),
+                'classSubjects as subjects_count',
+            ])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->toString();
+
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($classes);
     }
 
     public function store(Request $request)
@@ -30,14 +45,19 @@ class SchoolClassController extends Controller
 
     public function show(SchoolClass $schoolClass)
     {
-        return response()->json(
-            $schoolClass->load([
-                'classStudents.student',
-                'classSubjects.subject',
-                'classSubjects.teacher',
-                'homeroomTeachers.teacher',
-            ])
-        );
+        $schoolClass->load([
+            'classStudents.student',
+            'classSubjects.subject',
+            'classSubjects.teacher',
+            'homeroomTeachers.teacher',
+        ]);
+
+        $schoolClass->loadCount([
+            'classStudents as students_count' => fn ($query) => $query->where('status', 'AKTIF'),
+            'classSubjects as subjects_count',
+        ]);
+
+        return response()->json($schoolClass);
     }
 
     public function update(
@@ -59,7 +79,7 @@ class SchoolClassController extends Controller
         $schoolClass->delete();
 
         return response()->json([
-            'message' => 'Kelas berhasil dihapus.'
+            'message' => 'Kelas berhasil dihapus.',
         ]);
     }
 }

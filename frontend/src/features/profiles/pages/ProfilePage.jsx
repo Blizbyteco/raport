@@ -1,36 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  UserRound,
-  ShieldCheck,
-  LockKeyhole,
-  Camera,
-  Check,
-  Save,
-  KeyRound,
-  Mail,
-  Phone,
-  BriefcaseBusiness,
-  CalendarDays,
   BadgeCheck,
-  Eye,
-  EyeOff,
+  BriefcaseBusiness,
+  Camera,
+  KeyRound,
+  LockKeyhole,
+  Save,
+  ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
-const currentUser = {
-  fullName: "Firmansyah",
-  username: "firmansyah",
-  email: "firmansyah@example.com",
-  phone: "081234567890",
-  role: "admin", // Bisa "teacher", tanpa mengubah layout halaman
-  nip: "198765432021001",
-  joinedAt: "12 Juli 2025",
-  isActive: true,
-};
+import useAuth from "@/features/auth/hooks/useAuth";
+import {
+  useUpdatePassword,
+  useUpdateProfile,
+} from "@/features/profiles/hooks/useProfileMutations";
+import Button from "@/shared/ui/button/Button";
+import Alert from "@/shared/ui/feedback/Alert";
+import Input from "@/shared/ui/form/Input";
 
 const roleLabel = {
   admin: "Administrator",
   teacher: "Guru",
+  leader: "Pimpinan",
 };
 
 const getInitials = (name = "") =>
@@ -42,20 +35,36 @@ const getInitials = (name = "") =>
     .join("")
     .toUpperCase();
 
+const getErrorMessage = (error) => {
+  const data = error?.response?.data;
+
+  if (data?.message) {
+    return data.message;
+  }
+
+  const firstError = Object.values(data?.errors ?? {})[0]?.[0];
+
+  return firstError ?? "Terjadi kesalahan. Silakan coba lagi.";
+};
+
 const ProfilePage = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
-  const [showPassword, setShowPassword] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState(null);
+  const [profile, setProfile] = useState(user);
+
+  const updateProfileMutation = useUpdateProfile();
+  const updatePasswordMutation = useUpdatePassword();
 
   const {
     register,
     handleSubmit,
+    reset,
+    setError,
     formState: { errors, isDirty },
   } = useForm({
     defaultValues: {
-      fullName: currentUser.fullName,
-      email: currentUser.email,
-      phone: currentUser.phone,
+      full_name: user?.full_name ?? "",
     },
   });
 
@@ -64,22 +73,75 @@ const ProfilePage = () => {
     handleSubmit: handlePasswordSubmit,
     watch,
     reset: resetPassword,
+    setError: setPasswordError,
     formState: { errors: passwordErrors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      current_password: "",
+      password: "",
+      password_confirmation: "",
+    },
+  });
 
-  const newPassword = watch("newPassword");
+  const newPassword = watch("password");
 
-  const onSaveProfile = (data) => {
-    // UI only — sambungkan ke API nanti.
-    console.log(data);
-    setFeedback("Perubahan profil berhasil disimpan (simulasi).");
+  useEffect(() => {
+    setProfile(user);
+    reset({ full_name: user?.full_name ?? "" });
+  }, [user, reset]);
+
+  const setValidationErrors = (error, setFieldError) => {
+    const validationErrors = error?.response?.data?.errors;
+
+    if (!validationErrors) return;
+
+    Object.entries(validationErrors).forEach(([field, messages]) => {
+      if (messages?.[0]) {
+        setFieldError(field, { message: messages[0] });
+      }
+    });
   };
 
-  const onChangePassword = (data) => {
-    // UI only — belum mengirim perubahan ke backend.
-    console.log(data);
-    setFeedback("Password berhasil diperbarui (simulasi).");
-    resetPassword();
+  const onSaveProfile = (values) => {
+    setFeedback(null);
+
+    updateProfileMutation.mutate(
+      { full_name: values.full_name },
+      {
+        onSuccess: (response) => {
+          const updated = response?.data ?? response;
+
+          setProfile((previous) => ({ ...(previous ?? {}), ...updated }));
+          reset({ full_name: updated?.full_name ?? values.full_name });
+          setFeedback({
+            type: "success",
+            message: response?.message ?? "Profil berhasil diperbarui.",
+          });
+        },
+        onError: (error) => {
+          setFeedback({ type: "danger", message: getErrorMessage(error) });
+          setValidationErrors(error, setError);
+        },
+      },
+    );
+  };
+
+  const onChangePassword = (values) => {
+    setFeedback(null);
+
+    updatePasswordMutation.mutate(values, {
+      onSuccess: (response) => {
+        resetPassword();
+        setFeedback({
+          type: "success",
+          message: response?.message ?? "Password berhasil diperbarui.",
+        });
+      },
+      onError: (error) => {
+        setFeedback({ type: "danger", message: getErrorMessage(error) });
+        setValidationErrors(error, setPasswordError);
+      },
+    });
   };
 
   const tabs = [
@@ -88,8 +150,7 @@ const ProfilePage = () => {
   ];
 
   return (
-    <main className="min-h-screen space-y-6 bg-background text-dark ">
-      {/* Page heading */}
+    <main className="min-h-screen space-y-6 bg-background text-dark">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Profile Saya</h1>
         <p className="text-sm text-muted">
@@ -97,7 +158,6 @@ const ProfilePage = () => {
         </p>
       </div>
 
-      {/* Profile overview */}
       <section className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="h-28 bg-primary/10 sm:h-36" />
 
@@ -105,10 +165,10 @@ const ProfilePage = () => {
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
               <div className="relative flex size-20 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary text-2xl font-bold text-white sm:size-24">
-                {getInitials(currentUser.fullName)}
+                {getInitials(profile?.full_name ?? user?.full_name) || "?"}
                 <button
                   type="button"
-                  title="Ubah foto profil"
+                  aria-label="Ubah foto profil"
                   className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border-2 border-card bg-background text-foreground shadow-sm transition hover:bg-muted/20"
                 >
                   <Camera size={15} />
@@ -117,56 +177,46 @@ const ProfilePage = () => {
 
               <div className="min-w-0 pb-1">
                 <h2 className="truncate text-xl font-bold">
-                  {currentUser.fullName}
+                  {profile?.full_name ?? user?.full_name ?? "-"}
                 </h2>
-                <p className="text-sm text-muted">@{currentUser.username}</p>
+                <p className="text-sm text-muted">
+                  @{profile?.username ?? user?.username ?? "-"}
+                </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:pb-1">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
                 <BriefcaseBusiness size={14} />
-                {roleLabel[currentUser.role] ?? "Pengguna"}
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                {currentUser.isActive ? "Akun Aktif" : "Nonaktif"}
+                {roleLabel[profile?.role ?? user?.role] ?? "Pengguna"}
               </span>
             </div>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
+            {profile?.nip && (
+              <span className="inline-flex items-center gap-1.5">
+                <BadgeCheck size={14} />
+                NIP: {profile.nip}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5">
-              <BadgeCheck size={14} />
-              NIP: {currentUser.nip}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays size={14} />
-              Bergabung {currentUser.joinedAt}
+              <KeyRound size={14} />
+              ID Akun: {profile?.id ?? user?.id ?? "-"}
             </span>
           </div>
         </div>
       </section>
 
-      {/* Feedback */}
       {feedback && (
-        <div className="flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600">
-          <Check size={17} className="mt-0.5 shrink-0" />
-          {feedback}
-          <button
-            type="button"
-            onClick={() => setFeedback("")}
-            className="ml-auto text-xs font-medium underline"
-          >
-            Tutup
-          </button>
-        </div>
+        <Alert
+          type={feedback.type}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+        />
       )}
 
-      {/* Main content */}
       <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        {/* Sidebar tabs */}
         <aside className="h-fit rounded-2xl border border-border bg-card p-2">
           <p className="px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-wider text-muted">
             Pengaturan Akun
@@ -179,7 +229,7 @@ const ProfilePage = () => {
                 type="button"
                 onClick={() => {
                   setActiveTab(id);
-                  setFeedback("");
+                  setFeedback(null);
                 }}
                 className={`flex flex-1 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition lg:flex-none ${
                   activeTab === id
@@ -194,7 +244,6 @@ const ProfilePage = () => {
           </nav>
         </aside>
 
-        {/* Profile form */}
         <section className="min-w-0 rounded-2xl border border-border bg-card">
           {activeTab === "profile" ? (
             <form onSubmit={handleSubmit(onSaveProfile)}>
@@ -207,116 +256,60 @@ const ProfilePage = () => {
 
               <div className="space-y-5 p-5 sm:p-6">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium">Nama Lengkap</label>
-                    <div className="relative">
-                      <UserRound
-                        size={17}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                      />
-                      <input
-                        {...register("fullName", {
-                          required: "Nama lengkap wajib diisi",
-                        })}
-                        className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        placeholder="Masukkan nama lengkap"
-                      />
-                    </div>
-                    {errors.fullName && (
-                      <p className="text-xs text-red-500">
-                        {errors.fullName.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Nama Lengkap"
+                    required
+                    icon={UserRound}
+                    placeholder="Masukkan nama lengkap"
+                    error={errors.full_name?.message}
+                    {...register("full_name", {
+                      required: "Nama lengkap wajib diisi",
+                      maxLength: {
+                        value: 100,
+                        message: "Nama lengkap maksimal 100 karakter",
+                      },
+                    })}
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Username</label>
-                    <input
-                      value={currentUser.username}
-                      readOnly
-                      className="w-full cursor-not-allowed rounded-xl border border-border bg-muted/10 px-3 py-2.5 text-sm text-muted outline-none"
-                    />
-                    <p className="text-xs text-muted">
-                      Username tidak dapat diubah.
-                    </p>
-                  </div>
+                  <Input
+                    label="Username"
+                    value={profile?.username ?? user?.username ?? ""}
+                    readOnly
+                    disabled
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">NIP</label>
-                    <input
-                      value={currentUser.nip}
-                      readOnly
-                      className="w-full cursor-not-allowed rounded-xl border border-border bg-muted/10 px-3 py-2.5 text-sm text-muted outline-none"
-                    />
-                  </div>
+                  <Input
+                    label="NIP"
+                    value={profile?.nip ?? "-"}
+                    readOnly
+                    disabled
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
-                    <div className="relative">
-                      <Mail
-                        size={17}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                      />
-                      <input
-                        type="email"
-                        {...register("email", {
-                          required: "Email wajib diisi",
-                          pattern: {
-                            value: /^\S+@\S+\.\S+$/,
-                            message: "Format email tidak valid",
-                          },
-                        })}
-                        className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        placeholder="nama@email.com"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-xs text-red-500">
-                        {errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Nomor Telepon</label>
-                    <div className="relative">
-                      <Phone
-                        size={17}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                      />
-                      <input
-                        {...register("phone", {
-                          required: "Nomor telepon wajib diisi",
-                        })}
-                        className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        placeholder="08xxxxxxxxxx"
-                      />
-                    </div>
-                    {errors.phone && (
-                      <p className="text-xs text-red-500">
-                        {errors.phone.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Role"
+                    value={roleLabel[profile?.role ?? user?.role] ?? "Pengguna"}
+                    readOnly
+                    disabled
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p className="text-xs text-muted">
-                  Perubahan hanya disimulasikan pada UI.
+                  Perubahan profil disimpan langsung ke server.
                 </p>
-                <button
+
+                <Button
                   type="submit"
-                  disabled={!isDirty}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  icon={Save}
+                  isLoading={updateProfileMutation.isPending}
+                  disabled={!isDirty || updateProfileMutation.isPending}
                 >
-                  <Save size={16} />
                   Simpan Perubahan
-                </button>
+                </Button>
               </div>
             </form>
           ) : (
-            /* Security tab */
             <form onSubmit={handlePasswordSubmit(onChangePassword)}>
               <div className="border-b border-border p-5 sm:p-6">
                 <h3 className="font-semibold">Keamanan Akun</h3>
@@ -341,95 +334,65 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Password Saat Ini
-                  </label>
-                  <div className="relative">
-                    <KeyRound
-                      size={17}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                    />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      {...registerPassword("currentPassword", {
-                        required: "Password saat ini wajib diisi",
-                      })}
-                      className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-11 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="Masukkan password saat ini"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </div>
-                  {passwordErrors.currentPassword && (
-                    <p className="text-xs text-red-500">
-                      {passwordErrors.currentPassword.message}
-                    </p>
-                  )}
-                </div>
+                <Input
+                  label="Password Saat Ini"
+                  required
+                  type="password"
+                  icon={KeyRound}
+                  autoComplete="current-password"
+                  placeholder="Masukkan password saat ini"
+                  error={passwordErrors.current_password?.message}
+                  {...registerPassword("current_password", {
+                    required: "Password saat ini wajib diisi",
+                  })}
+                />
 
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Password Baru</label>
-                    <input
-                      type="password"
-                      {...registerPassword("newPassword", {
-                        required: "Password baru wajib diisi",
-                        minLength: {
-                          value: 8,
-                          message: "Minimal 8 karakter",
-                        },
-                      })}
-                      className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="Minimal 8 karakter"
-                    />
-                    {passwordErrors.newPassword && (
-                      <p className="text-xs text-red-500">
-                        {passwordErrors.newPassword.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Password Baru"
+                    required
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Minimal 8 karakter"
+                    error={passwordErrors.password?.message}
+                    {...registerPassword("password", {
+                      required: "Password baru wajib diisi",
+                      minLength: {
+                        value: 8,
+                        message: "Minimal 8 karakter",
+                      },
+                    })}
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Konfirmasi Password
-                    </label>
-                    <input
-                      type="password"
-                      {...registerPassword("confirmPassword", {
-                        required: "Konfirmasi password wajib diisi",
-                        validate: (value) =>
-                          value === newPassword ||
-                          "Konfirmasi password tidak cocok",
-                      })}
-                      className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      placeholder="Ulangi password baru"
-                    />
-                    {passwordErrors.confirmPassword && (
-                      <p className="text-xs text-red-500">
-                        {passwordErrors.confirmPassword.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Konfirmasi Password"
+                    required
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Ulangi password baru"
+                    error={passwordErrors.password_confirmation?.message}
+                    {...registerPassword("password_confirmation", {
+                      required: "Konfirmasi password wajib diisi",
+                      validate: (value) =>
+                        value === newPassword ||
+                        "Konfirmasi password tidak cocok",
+                    })}
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p className="text-xs text-muted">
-                  Perubahan hanya disimulasikan pada UI.
+                  Password baru akan langsung aktif setelah disimpan.
                 </p>
-                <button
+
+                <Button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  icon={ShieldCheck}
+                  isLoading={updatePasswordMutation.isPending}
                 >
-                  <ShieldCheck size={16} />
                   Perbarui Password
-                </button>
+                </Button>
               </div>
             </form>
           )}

@@ -1,28 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Download, FileSpreadsheet, Plus, Search, Trash2 } from "lucide-react";
+import { Download, Plus, Search, Trash2 } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
-import Select from "@/shared/ui/form/Select";
 import Modal from "@/shared/ui/overlay/Modal";
 
-import { classes } from "@/shared/data/classes.json";
 import StudentTable from "../ui/StudentTable";
-import { getStudents, removeStudent } from "../ui/studentList";
 import PageHeader from "@/shared/layout/PageHeader";
+import useStudents from "../hooks/useStudents";
+import useDeleteStudent from "../hooks/useDeleteStudent";
 
 const StudentsPage = () => {
   const navigate = useNavigate();
 
-  const [studentList, setStudentList] = useState(() => getStudents());
+  const [search, setSearch] = useState("");
   const [studentToDelete, setStudentToDelete] = useState(null);
+
+  const { data, isLoading, isError } = useStudents(search);
+  const deleteMutation = useDeleteStudent();
+
+  const students = data?.data ?? [];
 
   const handleDelete = () => {
     if (!studentToDelete) return;
 
-    setStudentList(removeStudent(studentToDelete.nis));
-    setStudentToDelete(null);
+    deleteMutation.mutate(studentToDelete.id, {
+      onSuccess: () => setStudentToDelete(null),
+    });
   };
 
   return (
@@ -33,18 +38,9 @@ const StudentsPage = () => {
           description="Kelola dan lihat data siswa yang terdaftar."
         />
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="flex gap-2">
-            <Button variant="outline" icon={Download}>
-              Ekspor data
-            </Button>
-            <Button
-              onClick={() => navigate("import")}
-              variant="outline"
-              icon={FileSpreadsheet}
-            >
-              Impor data
-            </Button>
-          </div>
+          <Button variant="outline" icon={Download}>
+            Ekspor data
+          </Button>
           <Button
             onClick={() => navigate("create")}
             variant="primary"
@@ -57,19 +53,34 @@ const StudentsPage = () => {
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <Input icon={Search} placeholder="Cari nama, NIS..." />
-
-          <div className="w-fulls sm:w-3/5">
-            <Select>
-              <option value="Semua kelas">Semua kelas</option>
-              {classes.map((_class) => (
-                <option key={_class.id}>{_class.name}</option>
-              ))}
-            </Select>
+          <div className="w-full sm:max-w-sm">
+            <Input
+              icon={Search}
+              placeholder="Cari nama atau NISN..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
           </div>
+
+          <p className="text-sm font-medium text-muted">
+            {students.length} siswa
+          </p>
         </div>
 
-        <StudentTable students={studentList} onDelete={setStudentToDelete} />
+        {isLoading ? (
+          <div className="rounded-xl border border-border bg-card px-6 py-14 text-center">
+            <p className="text-sm text-muted">Memuat data siswa...</p>
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl border border-border bg-card px-6 py-14 text-center">
+            <p className="text-sm text-danger">Gagal memuat data siswa.</p>
+          </div>
+        ) : (
+          <StudentTable
+            students={students}
+            onDelete={setStudentToDelete}
+          />
+        )}
       </section>
 
       <Modal
@@ -78,7 +89,7 @@ const StudentsPage = () => {
         title="Hapus data siswa"
         description={
           studentToDelete
-            ? `Data ${studentToDelete.name} akan dihapus dari daftar siswa.`
+            ? `Data ${studentToDelete.full_name} akan dihapus dari daftar siswa.`
             : undefined
         }
         size="S"
@@ -87,7 +98,12 @@ const StudentsPage = () => {
             <Button variant="outline" onClick={() => setStudentToDelete(null)}>
               Batal
             </Button>
-            <Button variant="danger" icon={Trash2} onClick={handleDelete}>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
               Hapus
             </Button>
           </>

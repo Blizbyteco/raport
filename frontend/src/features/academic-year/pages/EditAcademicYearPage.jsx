@@ -33,6 +33,7 @@ const EditAcademicYearPage = () => {
     return {
       start_year: academicYear.start_year,
       end_year: academicYear.end_year,
+      is_active: academicYear.is_active,
 
       odd_start_date: ganjil?.start_date ?? "",
       odd_end_date: ganjil?.end_date ?? "",
@@ -50,7 +51,7 @@ const EditAcademicYearPage = () => {
       },
       {
         onSuccess: () => {
-          navigate("/dashboard/academic-years");
+          navigate("/dashboard/academic-year");
         },
       },
     );

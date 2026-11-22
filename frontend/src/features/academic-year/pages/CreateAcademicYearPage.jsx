@@ -12,7 +12,7 @@ const CreateAcademicYearPage = () => {
   const handleSubmit = (data) => {
     createAcademicYear(data, {
       onSuccess: () => {
-        navigate("/dashboard/academic-years");
+        navigate("/dashboard/academic-year");
       },
     });
   };

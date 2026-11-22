@@ -177,7 +177,7 @@ const LearningProgressCreatePage = () => {
             type="button"
             variant="outline"
             size="M"
-            onClick={() => navigate(`/teacher/classrooms/${classSubjectId}`)}
+            onClick={() => navigate(`/teacher/class/${classSubjectId}`)}
           >
             Batal
           </Button>

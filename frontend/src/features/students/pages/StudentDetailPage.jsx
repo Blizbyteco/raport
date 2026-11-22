@@ -6,12 +6,10 @@ import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
 import Select from "@/shared/ui/form/Select";
 import Modal from "@/shared/ui/overlay/Modal";
-import slugify from "@/shared/lib/slugify";
-import {
-  getStudents,
-  removeStudent,
-  updateStudent,
-} from "../ui/studentList";
+
+import useStudent from "../hooks/useStudent";
+import useUpdateStudent from "../hooks/useUpdateStudent";
+import useDeleteStudent from "../hooks/useDeleteStudent";
 
 const getInitials = (name = "") =>
   name
@@ -22,55 +20,76 @@ const getInitials = (name = "") =>
     .join("")
     .toUpperCase();
 
-const StudentDetailContent = ({ slug }) => {
+const StudentDetailPage = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState(
-    () =>
-      getStudents().find((student) => slugify(student.name) === slug) ?? null,
-  );
-  const [originalNis] = useState(form?.nis ?? null);
+  const { data, isLoading, isError } = useStudent(id);
+  const updateMutation = useUpdateStudent();
+  const deleteMutation = useDeleteStudent();
+
+  const student = data?.data ?? data;
+
+  const initialForm = student
+    ? {
+        nisn: student.nisn ?? "",
+        full_name: student.full_name ?? "",
+        gender: student.gender ?? "",
+        parent_name: student.parent_name ?? "",
+      }
+    : null;
+
+  const [draft, setDraft] = useState(null);
   const [editing, setEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const form = draft ?? initialForm;
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    setForm((current) => ({ ...current, [name]: value }));
+    setDraft((current) => ({ ...(current ?? initialForm), [name]: value }));
   };
 
   const handleCancel = () => {
-    const current = getStudents().find(
-      (student) => student.nis === originalNis,
-    );
-
-    setForm(current ?? null);
+    setDraft(null);
     setEditing(false);
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!form) return;
-
-    updateStudent(originalNis, form);
-    setEditing(false);
-
-    const newSlug = slugify(form.name);
-
-    if (newSlug !== slug) {
-      navigate(`/dashboard/students/${newSlug}`, { replace: true });
-    }
+    updateMutation.mutate(
+      {
+        id: student.id,
+        nisn: form.nisn.trim(),
+        full_name: form.full_name.trim(),
+        gender: form.gender || null,
+        parent_name: form.parent_name.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          setDraft(null);
+          setEditing(false);
+        },
+      },
+    );
   };
 
   const handleDelete = () => {
-    if (!form) return;
-
-    removeStudent(form.nis);
-    navigate("/dashboard/students");
+    deleteMutation.mutate(student.id, {
+      onSuccess: () => navigate("/dashboard/students"),
+    });
   };
 
-  if (!form) {
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <p className="text-sm text-muted">Memuat data siswa...</p>
+      </div>
+    );
+  }
+
+  if (isError || !student || !form) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <Button
@@ -93,6 +112,11 @@ const StudentDetailContent = ({ slug }) => {
     );
   }
 
+  const placements = student.classStudents ?? [];
+  const currentPlacement =
+    placements.find((placement) => placement.academicYear?.is_active) ??
+    placements[0];
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Button
@@ -110,28 +134,29 @@ const StudentDetailContent = ({ slug }) => {
           <div className="flex flex-col gap-4 border-b border-border p-6 lg:flex-row lg:items-center">
             <div className="flex min-w-0 flex-1 items-center gap-4">
               <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-bold text-primary">
-                {getInitials(form.name)}
+                {getInitials(form.full_name)}
               </span>
 
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                  {form.name}
+                  {form.full_name}
                 </h1>
-                <p className="mt-1 text-sm text-muted">NIS {form.nis}</p>
+                <p className="mt-1 text-sm text-muted">NISN {form.nisn}</p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
               {editing ? (
                 <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancel}
-                  >
+                  <Button type="button" variant="outline" onClick={handleCancel}>
                     Batal
                   </Button>
-                  <Button type="submit" variant="primary" icon={Save}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    icon={Save}
+                    isLoading={updateMutation.isPending}
+                  >
                     Simpan
                   </Button>
                 </>
@@ -161,17 +186,17 @@ const StudentDetailContent = ({ slug }) => {
           <div className="grid gap-4 p-6 sm:grid-cols-2">
             <Input
               label="Nama lengkap"
-              name="name"
-              value={form.name}
+              name="full_name"
+              value={form.full_name}
               onChange={handleChange}
               disabled={!editing}
               required={editing}
             />
 
             <Input
-              label="NIS"
-              name="nis"
-              value={form.nis}
+              label="NISN"
+              name="nisn"
+              value={form.nisn}
               onChange={handleChange}
               disabled={!editing}
               required={editing}
@@ -184,37 +209,36 @@ const StudentDetailContent = ({ slug }) => {
               onChange={handleChange}
               disabled={!editing}
             >
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
+              <option value="">Belum diisi</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
             </Select>
+
+            <Input
+              label="Nama wali / orang tua"
+              name="parent_name"
+              value={form.parent_name}
+              onChange={handleChange}
+              disabled={!editing}
+            />
 
             <Input
               label="Kelas"
-              name="className"
-              value={form.className}
-              onChange={handleChange}
-              disabled={!editing}
+              value={
+                currentPlacement
+                  ? `${currentPlacement.schoolClass?.name ?? "-"} (${currentPlacement.academicYear?.start_year ?? "-"}/${currentPlacement.academicYear?.end_year ?? "-"})`
+                  : "Belum ditempatkan"
+              }
+              disabled
             />
-
-            <Input
-              label="Jurusan"
-              name="major"
-              value={form.major}
-              onChange={handleChange}
-              disabled={!editing}
-            />
-
-            <Select
-              label="Status"
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              disabled={!editing}
-            >
-              <option value="Aktif">Aktif</option>
-              <option value="Tidak aktif">Tidak aktif</option>
-            </Select>
           </div>
+
+          {updateMutation.isError && (
+            <p className="px-6 pb-6 text-sm text-danger">
+              {updateMutation.error?.response?.data?.message ||
+                "Gagal menyimpan data siswa."}
+            </p>
+          )}
         </section>
       </form>
 
@@ -222,14 +246,19 @@ const StudentDetailContent = ({ slug }) => {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         title="Hapus data siswa"
-        description={`Data ${form.name} akan dihapus dari daftar siswa.`}
+        description={`Data ${form.full_name} akan dihapus dari daftar siswa.`}
         size="S"
         footer={
           <>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Batal
             </Button>
-            <Button variant="danger" icon={Trash2} onClick={handleDelete}>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
               Hapus
             </Button>
           </>
@@ -241,12 +270,6 @@ const StudentDetailContent = ({ slug }) => {
       </Modal>
     </div>
   );
-};
-
-const StudentDetailPage = () => {
-  const { slug } = useParams();
-
-  return <StudentDetailContent key={slug} slug={slug} />;
 };
 
 export default StudentDetailPage;

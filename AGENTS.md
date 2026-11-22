@@ -26,13 +26,13 @@ raport/
 │   ├── docker/entrypoint.sh    # waits for DB, migrate, seed-if-empty, php-fpm
 │   ├── app/
 │   │   ├── Console/Commands/   # db:seed-if-empty (first-boot seeding gate)
-│   │   ├── Http/Controllers/   # 16 controllers (REST resources + reports)
+│   │   ├── Http/Controllers/   # 19 controllers (REST resources + dashboard/profile/attendance/reports)
 │   │   ├── Http/Resources/     # API resources
 │   │   ├── Models/             # Eloquent models (see app/Models/relations.txt)
 │   │   └── Providers/
 │   ├── config/             # cors.php, sanctum.php, database.php, session.php
 │   ├── database/
-│   │   ├── migrations/     # 20 migrations
+│   │   ├── migrations/     # 22 migrations
 │   │   └── seeders/        # demo/dummy data (users, students, lessons, ...)
 │   ├── resources/views/
 │   │   └── reports/        # classroom.blade.php, student-report.blade.php (DomPDF)
@@ -46,7 +46,7 @@ raport/
 │   ├── docker/nginx.conf       # SPA + /api,/login,/sanctum → PHP-FPM (docker)
 │   ├── src/
 │   │   ├── app/            # layouts, providers, router
-│   │   ├── features/       # feature-based modules (see §6)
+│   │   ├── features/       # feature-based modules (api/hooks/pages/ui where wired; see §6)
 │   │   └── shared/         # cross-feature api, layout, ui, lib, data
 │   ├── .agents/            # frontend-specific agent rules (READ BEFORE UI WORK)
 │   │   ├── AGENTS.md
@@ -93,7 +93,7 @@ cp .env.example .env                                                # configure 
 npm install
 npm run dev        # http://localhost:5173
 npm run build
-npm run lint       # NOTE: currently reports pre-existing errors (unused imports)
+npm run lint       # NOTE: currently reports 2 pre-existing AuthContext errors + warnings
 ```
 
 ### Docker (full stack: MySQL + API + SPA)
@@ -123,8 +123,8 @@ npm run build
 ```
 
 > Known baseline issues (do not assume your change caused them):
-> - `npm run lint` → ~28 pre-existing errors + 4 warnings (unused vars in teacher/shared components).
-> - `vendor/bin/pint --test` → ~20 pre-existing files with style drift (not fixed yet).
+> - `npm run lint` → 2 pre-existing errors in `frontend/src/features/auth/context/AuthContext.jsx` (`react-refresh/only-export-components`, `react-hooks/set-state-in-effect`) plus non-blocking warnings.
+> - `vendor/bin/pint --test` still reports pre-existing style drift in unrelated files; all backend files touched by the API-integration work pass Pint.
 
 ### CI / CD (GitHub Actions)
 
@@ -147,7 +147,7 @@ npm run build
   - `POST /login` lives in `routes/web.php` (`AuthController@login`), logs in via the `web` guard and regenerates the session. There is **no** `/api/login` and **no** token issuance.
   - Everything in `routes/api.php` is wrapped in `auth:sanctum`.
   - Frontend must send `withCredentials: true` + `withXSRFToken: true` (already done in `frontend/src/shared/api/Axios.js`).
-- **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars) plus nested/manual routes for placements, lessons, progress and reports. See `routes/api.php` and `.docs/API.md`.
+- **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars) plus nested/manual routes for placements, lessons, progress, attendance, dashboard, profile and reports. See `routes/api.php` and `.docs/API.md`.
 - **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`.
 - **Roles**: `users.role` enum = `teacher | admin | leader`. Seeds only create `teacher` users.
 - **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`). `UserSeeder` also creates an admin account: username `admin`, password `password`, role `admin`.
@@ -162,16 +162,19 @@ npm run build
 
 **Always read `frontend/.agents/AGENTS.md` before making UI changes — it is the authoritative rulebook** (feature placement, allowed dirs, no new deps, no arbitrary colors, UI-only scope, etc.). Summary:
 
-- Feature-based structure: `src/features/<feature>/{pages,ui}`. Shared code only in `src/shared/`.
+- Feature-based structure: `src/features/<feature>/{pages,ui}`, with `api/` and `hooks/` added where API integration is wired. Shared code only in `src/shared/`. For pure UI-only tasks, follow `frontend/.agents/AGENTS.md` and avoid adding new feature subdirectories.
 - Path alias `@/*` → `./src/*` (only alias in `vite.config.js`; Vite 8/rolldown rejects non-string alias replacements).
 - Stack: React 19, Vite, Tailwind CSS v4, React Router v8 (`react-router`), TanStack Query v5, axios, react-hook-form, recharts, lucide-react.
 - **Theme tokens live in `src/index.css`** (`@theme inline`): use `bg-background`, `bg-card`, `text-foreground`, `bg-primary`, `text-muted`, `text-danger`, `bg-success`, etc. Never use arbitrary colors like `bg-[#123456]`.
-- Data fetching pattern (the modern features follow it): `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
-  - Example: `academic-year`, `class`, `subjects`, `teacher`.
-  - Legacy features (`students`, `teachers`, `extracurriculars`, places with JSON mock data in `src/shared/data/`) still render static mock data and are not yet wired to the API.
-  - Admin `students`/`teachers` have slug-based combined view/edit pages (`/dashboard/students/:slug`, `/dashboard/teachers/:slug`, slug via `src/shared/lib/slugify.js`). Fields are locked until "Ubah data" is clicked. Delete is available both in the table row and on the detail page, each with a confirmation modal. Data is held in in-memory mock stores (`features/students/ui/studentList.js`, `features/teachers/ui/teacherList.js`) — no API persistence yet.
+- Data fetching pattern: `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
+  - API-wired features: `academic-year`, `class`, `subjects`, `teacher`, `students`, `teachers`, `extracurriculars`, `student-placement`, `teacher-placement`, `attendance`, `dashboard`, `profiles`, and teacher module hooks.
+  - Legacy mock stores (`features/students/ui/studentList.js`, `features/teachers/ui/teacherList.js`) and JSON files in `src/shared/data/` are unused; do not reintroduce them for new work.
+  - Admin `students`/`teachers` detail/edit routes are ID-based (`/dashboard/students/:id`, `/dashboard/teachers/:id`). Fields are locked until "Ubah data" is clicked; delete confirmation is available in the table and detail page.
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). Login at `/login`.
+  - Teacher class routes are keyed by `classSubjectId`: `/teacher/class/:classSubjectId`, `/progress/create`, `/progress/:dailyLessonId`, `/evaluation`, `/evaluation/:studentId`, `/attendance`, `/attendance/new`, `/attendance/:attendanceId/edit`, `/attendance/history`, `/attendance/history/:attendanceId`.
+  - Homeroom monitoring: `/teacher/class/monitoring/:classId` (with `/teacher/class/monitoring` selecting the first class).
+  - Teacher placement detail: `/dashboard/teacher-placement/:classId`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
 - Admin edit/delete actions (tables and cards) use the shared `Tooltip` for labels (`Ubah data ...`, `Hapus data ...`) instead of native `title` attributes.
 
@@ -191,6 +194,6 @@ Do not introduce new dependencies or a new design system unless explicitly reque
 - Do not touch `.kilo/` (agent worktree metadata).
 - Make changes in the correct app (`api/` vs `frontend/`); keep them independent.
 - When changing backend routes/controllers, update `api/.docs/API.md` if behavior/contract changes.
-- After backend changes run `php artisan test` (expect the known `ExampleTest` baseline failure) and Pint; after frontend changes run `npm run lint` and `npm run build`.
+- After backend changes run `php artisan test` (currently 2 passing tests) and Pint; after frontend changes run `npm run lint` and `npm run build`.
 - Migrations must succeed on a **fresh** database (Docker runs `php artisan migrate --force` on every start). Don't create a table that another migration already creates without a `Schema::hasTable()` guard.
 - Never add secrets to the repo; keep credentials in `api/.env` / `frontend/.env`.

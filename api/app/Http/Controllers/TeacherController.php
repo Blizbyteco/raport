@@ -14,6 +14,8 @@ class TeacherController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = min((int) $request->input('per_page', 20), 200);
+
         $teachers = User::query()
             ->where('role', 'teacher')
             ->when($request->search, function ($query, $search) {
@@ -24,7 +26,7 @@ class TeacherController extends Controller
                 });
             })
             ->latest()
-            ->paginate(20);
+            ->paginate($perPage);
 
         return response()->json($teachers);
     }
@@ -134,7 +136,7 @@ class TeacherController extends Controller
             $teacher->is_active = $validated['is_active'];
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $teacher->password = Hash::make($validated['password']);
         }
 

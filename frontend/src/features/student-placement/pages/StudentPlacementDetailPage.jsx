@@ -4,66 +4,70 @@ import { useNavigate, useParams } from "react-router";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
+import Modal from "@/shared/ui/overlay/Modal";
 import Table from "@/shared/ui/data-display/Table";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
-import { students } from "@/shared/data/students.json";
+import useClasses from "@/features/class/hooks/useClasses";
+import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
+import useClassStudents from "../hooks/useClassStudents";
+import { useRemoveStudentFromClass } from "../hooks/useStudentPlacementMutations";
 
-const classData = {
-  1: "X IPA 1",
-  2: "X IPA 2",
-  3: "XI IPA 1",
-  4: "XI IPS 1",
-  5: "XII IPA 1",
-  6: "XII IPS 1",
-};
+const genderLabel = (gender) =>
+  gender === "L" ? "Laki-laki" : gender === "P" ? "Perempuan" : "-";
 
 const StudentPlacementDetailPage = () => {
   const navigate = useNavigate();
   const { classId } = useParams();
 
   const [search, setSearch] = useState("");
-  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [studentToRemove, setStudentToRemove] = useState(null);
 
-  const className = classData[classId] ?? "Kelas";
+  const { data: classes } = useClasses();
+  const { data: academicYear } = useActiveAcademicYear();
+  const academicYearId = academicYear?.id;
 
-  const filteredStudents = useMemo(() => {
-    const keyword = search.toLowerCase().trim();
+  const { data, isLoading, isError } = useClassStudents(
+    classId,
+    academicYearId,
+  );
+  const removeMutation = useRemoveStudentFromClass();
 
-    if (!keyword) return students;
+  const classItem = (classes ?? []).find(
+    (item) => String(item.id) === String(classId),
+  );
+  const className = classItem?.name ?? "Kelas";
 
-    return students.filter(
-      (student) =>
-        student.name.toLowerCase().includes(keyword) ||
-        student.nis.toLowerCase().includes(keyword),
+  const placements = data ?? [];
+  const students = useMemo(
+    () =>
+      placements
+        .map((placement) => placement.student)
+        .filter(Boolean)
+        .filter((student) => {
+          const keyword = search.toLowerCase().trim();
+
+          return (
+            !keyword ||
+            student.full_name?.toLowerCase().includes(keyword) ||
+            student.nisn?.toLowerCase().includes(keyword)
+          );
+        }),
+    [placements, search],
+  );
+
+  const handleRemove = () => {
+    if (!studentToRemove) return;
+
+    removeMutation.mutate(
+      {
+        classId,
+        studentId: studentToRemove.id,
+        academicYearId,
+      },
+      {
+        onSuccess: () => setStudentToRemove(null),
+      },
     );
-  }, [search]);
-
-  const visibleStudentIds = filteredStudents.map((student) => student.id);
-
-  const allVisibleSelected =
-    visibleStudentIds.length > 0 &&
-    visibleStudentIds.every((id) => selectedStudents.includes(id));
-
-  const toggleStudent = (studentId) => {
-    setSelectedStudents((current) =>
-      current.includes(studentId)
-        ? current.filter((id) => id !== studentId)
-        : [...current, studentId],
-    );
-  };
-
-  const toggleAll = () => {
-    if (allVisibleSelected) {
-      setSelectedStudents((current) =>
-        current.filter((id) => !visibleStudentIds.includes(id)),
-      );
-
-      return;
-    }
-
-    setSelectedStudents((current) => [
-      ...new Set([...current, ...visibleStudentIds]),
-    ]);
   };
 
   return (
@@ -90,7 +94,7 @@ const StudentPlacementDetailPage = () => {
             </h1>
 
             <p className="mt-1 text-sm text-muted">
-              {students.length} siswa dalam kelas
+              {placements.length} siswa dalam kelas
             </p>
           </div>
         </div>
@@ -105,90 +109,101 @@ const StudentPlacementDetailPage = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-full sm:max-w-xs">
-          <Input
-            icon={Search}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Cari siswa..."
-          />
-        </div>
-
-        {selectedStudents.length > 0 && (
-          <span className="text-sm font-semibold text-primary">
-            {selectedStudents.length} siswa dipilih
-          </span>
-        )}
+      <div className="w-full sm:max-w-xs">
+        <Input
+          icon={Search}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Cari nama atau NISN..."
+        />
       </div>
 
-      <Table>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head className="w-12">
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                onChange={toggleAll}
-                aria-label="Pilih semua siswa"
-                className="size-4 cursor-pointer accent-primary"
-              />
-            </Table.Head>
-
-            <Table.Head>Siswa</Table.Head>
-            <Table.Head>NIS</Table.Head>
-            <Table.Head>Jenis Kelamin</Table.Head>
-            <Table.Head>Aksi</Table.Head>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {filteredStudents.map((student) => (
-            <Table.Row key={student.id}>
-              <Table.Cell>
-                <input
-                  type="checkbox"
-                  checked={selectedStudents.includes(student.id)}
-                  onChange={() => toggleStudent(student.id)}
-                  aria-label={`Pilih ${student.name}`}
-                  className="size-4 cursor-pointer accent-primary"
-                />
-              </Table.Cell>
-              <Table.Cell>
-                <span className="font-semibold">{student.name}</span>
-              </Table.Cell>
-              <Table.Cell>{student.nis}</Table.Cell>
-              <Table.Cell>{student.gender}</Table.Cell>
-              <Table.Cell>
-                <Tooltip label="Mutasi siswa">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Trash2}
-                    iconOnly
-                    aria-label={`Mutasi ${student.name}`}
-                    className="hover:text-danger"
-                  />
-                </Tooltip>
-              </Table.Cell>
-            </Table.Row>
-          ))}
-
-          {!filteredStudents.length && (
+      {isLoading ? (
+        <p className="text-sm text-muted">Memuat siswa kelas...</p>
+      ) : isError ? (
+        <p className="text-sm text-danger">Gagal memuat siswa kelas.</p>
+      ) : (
+        <Table>
+          <Table.Header>
             <Table.Row>
-              <Table.Cell colSpan={5} className="py-14 text-center">
-                <p className="font-semibold text-foreground">
-                  Siswa tidak ditemukan
-                </p>
-
-                <p className="mt-1 text-sm text-muted">
-                  Coba gunakan nama atau NIS yang berbeda.
-                </p>
-              </Table.Cell>
+              <Table.Head>Siswa</Table.Head>
+              <Table.Head>NISN</Table.Head>
+              <Table.Head>Jenis kelamin</Table.Head>
+              <Table.Head>Aksi</Table.Head>
             </Table.Row>
-          )}
-        </Table.Body>
-      </Table>
+          </Table.Header>
+
+          <Table.Body>
+            {students.map((student) => (
+              <Table.Row key={student.id}>
+                <Table.Cell>
+                  <span className="font-semibold">{student.full_name}</span>
+                </Table.Cell>
+                <Table.Cell>{student.nisn}</Table.Cell>
+                <Table.Cell>{genderLabel(student.gender)}</Table.Cell>
+                <Table.Cell>
+                  <Tooltip label="Keluarkan siswa dari kelas">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => setStudentToRemove(student)}
+                      aria-label={`Keluarkan ${student.full_name}`}
+                      className="hover:text-danger"
+                    />
+                  </Tooltip>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+
+            {!students.length && (
+              <Table.Row>
+                <Table.Cell colSpan={4} className="py-14 text-center">
+                  <p className="font-semibold text-foreground">
+                    Siswa tidak ditemukan
+                  </p>
+
+                  <p className="mt-1 text-sm text-muted">
+                    Coba gunakan nama atau NISN yang berbeda.
+                  </p>
+                </Table.Cell>
+              </Table.Row>
+            )}
+          </Table.Body>
+        </Table>
+      )}
+
+      <Modal
+        open={Boolean(studentToRemove)}
+        onClose={() => setStudentToRemove(null)}
+        title="Keluarkan siswa dari kelas"
+        description={
+          studentToRemove
+            ? `${studentToRemove.full_name} akan dikeluarkan dari ${className}.`
+            : undefined
+        }
+        size="S"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setStudentToRemove(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={handleRemove}
+              isLoading={removeMutation.isPending}
+            >
+              Keluarkan
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Siswa dapat ditempatkan kembali di kelas lain.
+        </p>
+      </Modal>
     </div>
   );
 };

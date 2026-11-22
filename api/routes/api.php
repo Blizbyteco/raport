@@ -1,22 +1,24 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassHomeroomTeacherController;
 use App\Http\Controllers\ClassStudentController;
 use App\Http\Controllers\ClassSubjectController;
 use App\Http\Controllers\DailyLessonController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExtracurricularController;
 use App\Http\Controllers\ExtracurricularStudentController;
 use App\Http\Controllers\ExtracurricularTeacherController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentDailyProgressController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -24,10 +26,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Profile
+    Route::get('/profile', [AuthController::class, 'user']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'summary']);
+
     // Teacher
     Route::get('/teacher/classes', [ClassSubjectController::class, 'teacherClasses']);
+    Route::get('/teacher/homeroom-classes', [ClassSubjectController::class, 'homeroomClasses']);
+    Route::get('/teacher/classes/{schoolClass}', [ClassSubjectController::class, 'classDetail']);
+    Route::get('/teacher/classes/{schoolClass}/progress', [ClassSubjectController::class, 'classProgress']);
 
     // Academic Year
+    Route::post('/academic-years/{academicYear}/activate', [AcademicYearController::class, 'activate']);
     Route::apiResource('academic-years', AcademicYearController::class);
 
     // Master Data
@@ -72,10 +86,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Students dalam classroom
     Route::get('/class-subjects/{classSubject}/students', [ClassSubjectController::class, 'students']);
+    Route::get('/class-subjects/{classSubject}/evaluation', [ClassSubjectController::class, 'evaluation']);
 
     // Student Daily Progress
     Route::get('/class-subjects/{classSubject}/report/pdf', [ReportController::class, 'classroomReport']);
     Route::get('/students/{student}/report/pdf', [ReportController::class, 'studentReport']);
     Route::get('/lessons/{dailyLesson}/progress', [StudentDailyProgressController::class, 'index']);
     Route::put('/lessons/{dailyLesson}/progress/{student}', [StudentDailyProgressController::class, 'update']); // Edit progress satu siswa
+
+    // Attendance
+    Route::get('/class-subjects/{classSubject}/attendances', [AttendanceController::class, 'index']);
+    Route::post('/class-subjects/{classSubject}/attendances', [AttendanceController::class, 'store']);
+    Route::get('/attendances/{attendance}', [AttendanceController::class, 'show']);
+    Route::put('/attendances/{attendance}', [AttendanceController::class, 'update']);
+    Route::delete('/attendances/{attendance}', [AttendanceController::class, 'destroy']);
 });

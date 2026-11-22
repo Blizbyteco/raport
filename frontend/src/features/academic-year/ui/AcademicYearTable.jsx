@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import Button from "@/shared/ui/button/Button";
@@ -7,7 +7,7 @@ import Table from "@/shared/ui/data-display/Table";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { formatDate } from "@/shared/lib/formatDate";
 
-const AcademicYearTable = ({ data, isLoading, isError, onDelete }) => {
+const AcademicYearTable = ({ data, isLoading, isError, onDelete, onActivate }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -99,6 +99,19 @@ const AcademicYearTable = ({ data, isLoading, isError, onDelete }) => {
                 {/* Aksi */}
                 <Table.Cell>
                   <div className="flex items-center gap-1">
+                    {!academicYear.is_active && (
+                      <Tooltip label="Aktifkan tahun akademik">
+                        <Button
+                          variant="ghost"
+                          size="S"
+                          icon={CheckCircle2}
+                          iconOnly
+                          onClick={() => onActivate?.(academicYear)}
+                          aria-label={`Aktifkan tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                        />
+                      </Tooltip>
+                    )}
+
                     <Tooltip label="Ubah data tahun akademik">
                       <Button
                         variant="ghost"

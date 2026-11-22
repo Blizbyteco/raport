@@ -29,6 +29,7 @@ import LoginPage from "@/features/auth/page/LoginPage";
 import LearningProgressUpdatePage from "@/features/teacher/pages/LearningProgressUpdate";
 import ClassroomEvaluationPage from "@/features/teacher/pages/ClassroomEvaluationPage";
 import AttendanceHistoryPage from "@/features/attendance/pages/AttendanceHistoryPage";
+import AttendanceDetailPage from "@/features/attendance/pages/AttendanceDetailPage";
 import AttendanceFormPage from "@/features/attendance/pages/AttendanceFormPage";
 import StudentProgressDetailPage from "@/features/teacher/pages/StudentProgressDetailPage";
 import ProfilePage from "@/features/profiles/pages/ProfilePage";
@@ -63,14 +64,14 @@ const Routers = () => {
                 <Route index element={<StudentsPage />} />
                 <Route path="create" element={<CreateStudentPage />} />
                 <Route path="import" element={<ImportStudentsPage />} />
-                <Route path=":slug" element={<StudentDetailPage />} />
+                <Route path=":id" element={<StudentDetailPage />} />
               </Route>
 
               <Route path="teachers">
                 <Route index element={<TeachersPage />} />
                 <Route path="create" element={<CreateTeacherPage />} />
                 <Route path="import" element={<ImportTeachersPage />} />
-                <Route path=":slug" element={<TeacherDetailPage />} />
+                <Route path=":id" element={<TeacherDetailPage />} />
               </Route>
 
               <Route path="classes">
@@ -103,7 +104,7 @@ const Routers = () => {
               />
 
               <Route
-                path="teacher-placement/detail"
+                path="teacher-placement/:classId"
                 element={<TeacherPlacementDetailPage />}
               />
             </Route>
@@ -117,25 +118,44 @@ const Routers = () => {
               <Route index element={<TeacherHomePage />} />
               <Route path="class/:classSubjectId" element={<ClassroomPage />} />
               <Route
-                path="class/evaluation"
-                element={<ClassroomEvaluationPage />}
-              />
-              <Route
-                path="class/evaluation/:studentId/detail"
-                element={<StudentProgressDetailPage />}
-              />
-              <Route
-                path="class/attendance/history"
-                element={<AttendanceHistoryPage />}
-              />
-              <Route path="class/attendance" element={<AttendanceFormPage />} />
-              <Route
                 path="class/:classSubjectId/progress/create"
                 element={<LearningProgressCreatePage />}
               />
               <Route
                 path="class/:classSubjectId/progress/:dailyLessonId"
                 element={<LearningProgressUpdatePage />}
+              />
+              <Route
+                path="class/:classSubjectId/evaluation"
+                element={<ClassroomEvaluationPage />}
+              />
+              <Route
+                path="class/:classSubjectId/evaluation/:studentId"
+                element={<StudentProgressDetailPage />}
+              />
+              <Route
+                path="class/:classSubjectId/attendance"
+                element={<AttendanceFormPage />}
+              />
+              <Route
+                path="class/:classSubjectId/attendance/new"
+                element={<AttendanceFormPage />}
+              />
+              <Route
+                path="class/:classSubjectId/attendance/:attendanceId/edit"
+                element={<AttendanceFormPage />}
+              />
+              <Route
+                path="class/:classSubjectId/attendance/history"
+                element={<AttendanceHistoryPage />}
+              />
+              <Route
+                path="class/:classSubjectId/attendance/history/:attendanceId"
+                element={<AttendanceDetailPage />}
+              />
+              <Route
+                path="class/monitoring/:classId"
+                element={<HomeroomMonitoringPage />}
               />
               <Route
                 path="class/monitoring"

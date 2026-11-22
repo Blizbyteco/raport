@@ -14,7 +14,9 @@ const ProtectedRoute = ({ roles = [] }) => {
   }
 
   if (roles.length > 0 && !roles.includes(user.role)) {
-    return <Navigate to="/403" replace />;
+    return (
+      <Navigate to={user.role === "teacher" ? "/teacher" : "/dashboard"} replace />
+    );
   }
 
   return <Outlet />;

@@ -5,18 +5,14 @@ import { useNavigate, useParams } from "react-router";
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
 import Table from "@/shared/ui/data-display/Table";
-import { students } from "@/shared/data/students.json";
+import useClasses from "@/features/class/hooks/useClasses";
+import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
+import useStudents from "@/features/students/hooks/useStudents";
+import useClassStudents from "../hooks/useClassStudents";
+import { useAddStudentsToClass } from "../hooks/useStudentPlacementMutations";
 
-const classData = {
-  1: "X IPA 1",
-  2: "X IPA 2",
-  3: "XI IPA 1",
-  4: "XI IPS 1",
-  5: "XII IPA 1",
-  6: "XII IPS 1",
-};
-
-const unassignedStudents = students;
+const genderLabel = (gender) =>
+  gender === "L" ? "Laki-laki" : gender === "P" ? "Perempuan" : "-";
 
 const StudentPlacementAddPage = () => {
   const navigate = useNavigate();
@@ -25,19 +21,35 @@ const StudentPlacementAddPage = () => {
   const [search, setSearch] = useState("");
   const [selectedStudents, setSelectedStudents] = useState([]);
 
-  const className = classData[classId] ?? "Kelas";
+  const { data: classes } = useClasses();
+  const { data: academicYear } = useActiveAcademicYear();
+  const academicYearId = academicYear?.id;
 
-  const filteredStudents = useMemo(() => {
-    const keyword = search.toLowerCase().trim();
+  const { data: studentsData, isLoading, isError } = useStudents(search);
+  const { data: currentPlacements } = useClassStudents(
+    classId,
+    academicYearId,
+  );
+  const addMutation = useAddStudentsToClass();
 
-    if (!keyword) return unassignedStudents;
+  const classItem = (classes ?? []).find(
+    (item) => String(item.id) === String(classId),
+  );
+  const className = classItem?.name ?? "Kelas";
 
-    return unassignedStudents.filter(
-      (student) =>
-        student.name.toLowerCase().includes(keyword) ||
-        student.nis.toLowerCase().includes(keyword),
-    );
-  }, [search]);
+  const placedIds = new Set(
+    (currentPlacements ?? []).map((placement) => placement.student_id),
+  );
+
+  const availableStudents = useMemo(() => {
+    const students = studentsData?.data ?? [];
+
+    return students.filter((student) => !placedIds.has(student.id));
+  }, [studentsData, placedIds]);
+
+  const allVisibleSelected =
+    availableStudents.length > 0 &&
+    availableStudents.every((student) => selectedStudents.includes(student.id));
 
   const toggleStudent = (studentId) => {
     setSelectedStudents((current) =>
@@ -48,26 +60,37 @@ const StudentPlacementAddPage = () => {
   };
 
   const toggleAll = () => {
-    const visibleIds = filteredStudents.map((student) => student.id);
-
-    const allSelected =
-      visibleIds.length > 0 &&
-      visibleIds.every((id) => selectedStudents.includes(id));
-
-    if (allSelected) {
+    if (allVisibleSelected) {
       setSelectedStudents((current) =>
-        current.filter((id) => !visibleIds.includes(id)),
+        current.filter(
+          (id) => !availableStudents.some((student) => student.id === id),
+        ),
       );
-    } else {
-      setSelectedStudents((current) => [
-        ...new Set([...current, ...visibleIds]),
-      ]);
+      return;
     }
+
+    setSelectedStudents((current) => [
+      ...new Set([...current, ...availableStudents.map((student) => student.id)]),
+    ]);
   };
 
-  const allVisibleSelected =
-    filteredStudents.length > 0 &&
-    filteredStudents.every((student) => selectedStudents.includes(student.id));
+  const handleSubmit = () => {
+    if (!selectedStudents.length || !academicYearId) return;
+
+    addMutation.mutate(
+      {
+        classId,
+        data: {
+          academic_year_id: academicYearId,
+          student_ids: selectedStudents,
+        },
+      },
+      {
+        onSuccess: () =>
+          navigate(`/dashboard/student-placement/${classId}`),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -87,16 +110,21 @@ const StudentPlacementAddPage = () => {
             <Users className="size-5" />
           </div>
           <div>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
               {className}
             </h1>
-            <p className="mt-2 text-sm text-muted">
-              Pilih siswa yang belum memiliki kelas.
+            <p className="mt-1 text-sm text-muted">
+              Pilih siswa yang belum ditempatkan di kelas ini.
             </p>
           </div>
         </div>
 
-        <Button icon={UserPlus} disabled={selectedStudents.length === 0}>
+        <Button
+          icon={UserPlus}
+          onClick={handleSubmit}
+          disabled={selectedStudents.length === 0 || !academicYearId}
+          isLoading={addMutation.isPending}
+        >
           Tambahkan{" "}
           {selectedStudents.length > 0
             ? `${selectedStudents.length} siswa`
@@ -104,78 +132,73 @@ const StudentPlacementAddPage = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-full sm:max-w-sm">
-          <Input
-            icon={Search}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Cari nama atau NIS..."
-          />
-        </div>
-
-        {selectedStudents.length > 0 && (
-          <p className="text-sm font-semibold text-primary">
-            {selectedStudents.length} siswa dipilih
-          </p>
-        )}
+      <div className="w-full sm:max-w-sm">
+        <Input
+          icon={Search}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Cari nama atau NISN..."
+        />
       </div>
 
-      <Table>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head className="w-12">
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                onChange={toggleAll}
-                aria-label="Pilih semua siswa"
-                className="size-4 cursor-pointer accent-primary"
-              />
-            </Table.Head>
-
-            <Table.Head>Siswa</Table.Head>
-            <Table.Head>NIS</Table.Head>
-            <Table.Head>Jenis Kelamin</Table.Head>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {filteredStudents.map((student) => (
-            <Table.Row key={student.id}>
-              <Table.Cell>
+      {isLoading ? (
+        <p className="text-sm text-muted">Memuat data siswa...</p>
+      ) : isError ? (
+        <p className="text-sm text-danger">Gagal memuat data siswa.</p>
+      ) : (
+        <Table>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head className="w-12">
                 <input
                   type="checkbox"
-                  checked={selectedStudents.includes(student.id)}
-                  onChange={() => toggleStudent(student.id)}
-                  aria-label={`Pilih ${student.name}`}
+                  checked={allVisibleSelected}
+                  onChange={toggleAll}
+                  aria-label="Pilih semua siswa"
                   className="size-4 cursor-pointer accent-primary"
                 />
-              </Table.Cell>
-
-              <Table.Cell>
-                <span className="font-semibold">{student.name}</span>
-              </Table.Cell>
-
-              <Table.Cell>{student.nis}</Table.Cell>
-
-              <Table.Cell>{student.gender}</Table.Cell>
+              </Table.Head>
+              <Table.Head>Siswa</Table.Head>
+              <Table.Head>NISN</Table.Head>
+              <Table.Head>Jenis kelamin</Table.Head>
             </Table.Row>
-          ))}
+          </Table.Header>
 
-          {!filteredStudents.length && (
-            <Table.Row>
-              <Table.Cell colSpan={4} className="py-14 text-center">
-                <p className="font-semibold text-foreground">Tidak ada siswa</p>
+          <Table.Body>
+            {availableStudents.map((student) => (
+              <Table.Row key={student.id}>
+                <Table.Cell>
+                  <input
+                    type="checkbox"
+                    checked={selectedStudents.includes(student.id)}
+                    onChange={() => toggleStudent(student.id)}
+                    aria-label={`Pilih ${student.full_name}`}
+                    className="size-4 cursor-pointer accent-primary"
+                  />
+                </Table.Cell>
+                <Table.Cell>
+                  <span className="font-semibold">{student.full_name}</span>
+                </Table.Cell>
+                <Table.Cell>{student.nisn}</Table.Cell>
+                <Table.Cell>{genderLabel(student.gender)}</Table.Cell>
+              </Table.Row>
+            ))}
 
-                <p className="mt-1 text-sm text-muted">
-                  Tidak ada siswa yang belum memiliki kelas.
-                </p>
-              </Table.Cell>
-            </Table.Row>
-          )}
-        </Table.Body>
-      </Table>
+            {!availableStudents.length && (
+              <Table.Row>
+                <Table.Cell colSpan={4} className="py-14 text-center">
+                  <p className="font-semibold text-foreground">
+                    Tidak ada siswa
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    Coba kata kunci lain atau tambahkan siswa baru.
+                  </p>
+                </Table.Cell>
+              </Table.Row>
+            )}
+          </Table.Body>
+        </Table>
+      )}
     </div>
   );
 };

@@ -6,21 +6,21 @@
 /api
 ```
 
-Semua endpoint yang berada di bawah bagian **Authenticated API** membutuhkan:
+Semua endpoint di bawah `/api` berada di middleware `auth:sanctum`. Autentikasi menggunakan **Laravel Sanctum mode SPA** (cookie session), bukan bearer token. Login dilakukan melalui `POST /login` di luar prefix `/api` dengan payload `username` dan `password`.
+
+Request JSON sebaiknya menyertakan:
 
 ```http
-Authorization: Bearer {token}
 Accept: application/json
 Content-Type: application/json
+X-CSRF-TOKEN: {csrf_token}
 ```
-
-Autentikasi menggunakan **Laravel Sanctum**.
 
 ---
 
 # 1. Academic Years
 
-Mengelola tahun ajaran dan semester.
+Mengelola tahun ajaran dan dua semester (`terms`) yang menyertainya.
 
 ## 1.1 Get Academic Years
 
@@ -28,21 +28,38 @@ Mengelola tahun ajaran dan semester.
 GET /api/academic-years
 ```
 
-Mengambil seluruh data tahun ajaran.
+Mengambil seluruh tahun ajaran beserta `terms`, diurutkan dari `start_year` terbesar.
 
 ### Response
 
 ```json
-[
-    {
-        "id": 1,
-        "year_name": "2026/2027",
-        "semester": "GANJIL",
-        "is_active": true,
-        "created_at": "2026-07-01T00:00:00.000000Z",
-        "updated_at": "2026-07-01T00:00:00.000000Z"
-    }
-]
+{
+    "message": "Data tahun ajaran berhasil diambil.",
+    "data": [
+        {
+            "id": 1,
+            "start_year": 2026,
+            "end_year": 2027,
+            "is_active": true,
+            "terms": [
+                {
+                    "id": 1,
+                    "academic_year_id": 1,
+                    "name": "Ganjil",
+                    "start_date": "2026-07-01",
+                    "end_date": "2026-12-31"
+                },
+                {
+                    "id": 2,
+                    "academic_year_id": 1,
+                    "name": "Genap",
+                    "start_date": "2027-01-01",
+                    "end_date": "2027-06-30"
+                }
+            ]
+        }
+    ]
+}
 ```
 
 ---
@@ -53,7 +70,7 @@ Mengambil seluruh data tahun ajaran.
 GET /api/academic-years/{academicYear}
 ```
 
-Mengambil detail satu tahun ajaran.
+Mengambil detail satu tahun ajaran beserta `terms`.
 
 ### Parameters
 
@@ -69,25 +86,31 @@ Mengambil detail satu tahun ajaran.
 POST /api/academic-years
 ```
 
-Membuat tahun ajaran baru.
-
 ### Payload
 
 ```json
 {
-    "year_name": "2026/2027",
-    "semester": "GANJIL",
-    "is_active": true
+    "start_year": 2026,
+    "end_year": 2027,
+    "is_active": true,
+    "terms": [
+        { "name": "Ganjil", "start_date": "2026-07-01", "end_date": "2026-12-31" },
+        { "name": "Genap", "start_date": "2027-01-01", "end_date": "2027-06-30" }
+    ]
 }
 ```
 
 ### Fields
 
-| Field       | Type    | Required | Description  |
-| ----------- | ------- | -------- | ------------ |
-| `year_name` | string  | Yes      | Tahun ajaran |
-| `semester`  | string  | Yes      | Semester     |
-| `is_active` | boolean | No       | Status aktif |
+| Field             | Type    | Required | Description                          |
+| ----------------- | ------- | -------- | ------------------------------------ |
+| `start_year`      | integer | Yes      | Tahun mulai (2000–2100)              |
+| `end_year`        | integer | Yes      | Harus `start_year + 1`               |
+| `is_active`       | boolean | No       | Default `false`; jika `true`, tahun lain dinonaktifkan |
+| `terms`           | array   | Yes      | Harus berisi 2 semester              |
+| `terms.*.name`    | string  | Yes      | `Ganjil` atau `Genap`, tidak duplikat |
+| `terms.*.start_date` | date  | Yes      | Tanggal mulai semester               |
+| `terms.*.end_date`   | date  | Yes      | Tanggal selesai, tidak sebelum mulai |
 
 ---
 
@@ -97,15 +120,7 @@ Membuat tahun ajaran baru.
 PUT /api/academic-years/{academicYear}
 ```
 
-### Payload
-
-```json
-{
-    "year_name": "2026/2027",
-    "semester": "GENAP",
-    "is_active": true
-}
-```
+Payload sama seperti 1.3; `terms.*.id` opsional. `terms` tetap wajib berisi dua semester. Jika `is_active: true`, tahun ajaran lain dinonaktifkan.
 
 ---
 
@@ -115,7 +130,40 @@ PUT /api/academic-years/{academicYear}
 DELETE /api/academic-years/{academicYear}
 ```
 
-Menghapus tahun ajaran.
+Menghapus tahun ajaran. Tahun ajaran yang sedang aktif tidak dapat dihapus (422).
+
+---
+
+## 1.6 Activate Academic Year
+
+```http
+POST /api/academic-years/{academicYear}/activate
+```
+
+Menjadikan tahun ajaran aktif dan menonaktifkan semua tahun ajaran lainnya.
+
+### Response
+
+```json
+{
+    "message": "Tahun ajaran berhasil diaktifkan.",
+    "data": {
+        "id": 1,
+        "start_year": 2026,
+        "end_year": 2027,
+        "is_active": true,
+        "terms": [
+            {
+                "id": 1,
+                "academic_year_id": 1,
+                "name": "Ganjil",
+                "start_date": "2026-07-01",
+                "end_date": "2026-12-31"
+            }
+        ]
+    }
+}
+```
 
 ---
 
@@ -199,8 +247,10 @@ Mengelola master mata pelajaran.
 ## 3.1 Get Subjects
 
 ```http
-GET /api/subjects
+GET /api/subjects?search=matematika
 ```
+
+Mendukung filter `search` pada `name`; hasil diurutkan berdasarkan nama.
 
 ---
 
@@ -222,10 +272,15 @@ POST /api/subjects
 
 ```json
 {
-    "code": "MTK",
     "name": "Matematika"
 }
 ```
+
+### Fields
+
+| Field  | Type   | Required | Description          |
+| ------ | ------ | -------- | -------------------- |
+| `name` | string | Yes      | Nama mata pelajaran  |
 
 ---
 
@@ -239,7 +294,6 @@ PUT /api/subjects/{subject}
 
 ```json
 {
-    "code": "MTK",
     "name": "Matematika"
 }
 ```
@@ -506,7 +560,7 @@ POST /api/classes/{schoolClass}/subjects
 | ------------------ | ------- | -------- | -------------------------- |
 | `academic_year_id` | integer | Yes      | Tahun ajaran               |
 | `subject_id`       | integer | Yes      | Mata pelajaran             |
-| `teacher_id`       | integer | Yes      | ID user dengan role `GURU` |
+| `teacher_id`       | integer | Yes      | ID user dengan role `teacher` |
 
 ---
 
@@ -531,6 +585,131 @@ PUT /api/classes/{schoolClass}/subjects/{classSubject}
 
 ```http
 DELETE /api/classes/{schoolClass}/subjects/{classSubject}
+```
+
+---
+
+## 6.5 Get Teacher Classes
+
+```http
+GET /api/teacher/classes
+```
+
+Mengambil semua class subject yang diampu oleh user yang sedang login.
+
+### Response
+
+```json
+[
+    {
+        "id": 5,
+        "subject": { "id": 3, "name": "Matematika" },
+        "classroom": {
+            "id": 2,
+            "name": "X RPL 1",
+            "grade_level": 10,
+            "student_count": 32
+        }
+    }
+]
+```
+
+---
+
+## 6.6 Get Homeroom Classes
+
+```http
+GET /api/teacher/homeroom-classes
+```
+
+Mengambil kelas wali kelas user yang sedang login untuk tahun ajaran aktif (fallback: tahun ajaran terbaru).
+
+### Response
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "classroom": { "id": 2, "name": "X RPL 1", "grade_level": 10 },
+            "academic_year": { "id": 1, "start_year": 2026, "end_year": 2027 },
+            "student_count": 32
+        }
+    ]
+}
+```
+
+---
+
+## 6.7 Get Teacher Class Detail
+
+```http
+GET /api/teacher/classes/{schoolClass}
+```
+
+Detail kelas untuk user yang sedang login, dibatasi pada tahun ajaran aktif.
+
+### Response
+
+```json
+{
+    "data": {
+        "id": 2,
+        "name": "X RPL 1",
+        "grade_level": 10,
+        "academic_year": { "id": 1, "start_year": 2026, "end_year": 2027 },
+        "students": [
+            { "id": 20, "nisn": "0012345678", "full_name": "Ahmad Fauzan" }
+        ],
+        "subjects": [
+            {
+                "id": 5,
+                "subject": { "id": 3, "name": "Matematika" },
+                "teacher": { "id": 8, "full_name": "Ahmad Fauzan" }
+            }
+        ],
+        "homeroom_teachers": [
+            { "id": 8, "full_name": "Ahmad Fauzan" }
+        ]
+    }
+}
+```
+
+---
+
+## 6.8 Get Teacher Class Progress
+
+```http
+GET /api/teacher/classes/{schoolClass}/progress
+```
+
+Ringkasan nilai progress siswa pada tahun ajaran aktif. Status: `Belum Dinilai`, `Perlu Perhatian` (`<70`), `Baik` (`70–84`), `Sangat Baik` (`>=85`).
+
+### Response
+
+```json
+{
+    "data": {
+        "class": { "id": 2, "name": "X RPL 1", "grade_level": 10 },
+        "academic_year": { "id": 1, "start_year": 2026, "end_year": 2027 },
+        "summary": {
+            "average": 78.5,
+            "total_lessons": 12,
+            "assessed_students": 30,
+            "attention_students": 4
+        },
+        "students": [
+            {
+                "id": 20,
+                "nisn": "0012345678",
+                "full_name": "Ahmad Fauzan",
+                "average": 82.5,
+                "assessed": 12,
+                "status": "Baik"
+            }
+        ]
+    }
+}
 ```
 
 ---
@@ -633,8 +812,10 @@ POST /api/extracurriculars
 | Field         | Type    | Required | Description          |
 | ------------- | ------- | -------- | -------------------- |
 | `name`        | string  | Yes      | Nama ekstrakurikuler |
-| `description` | string  | No       | Deskripsi            |
+| `description` | text    | No       | Deskripsi; nullable  |
 | `is_active`   | boolean | No       | Status aktif         |
+
+Kolom `description` bersifat nullable (migrasi `2026_11_22_000001`).
 
 ---
 
@@ -766,20 +947,33 @@ Student Daily Progress
 GET /api/class-subjects/{classSubject}/lessons
 ```
 
-Mengambil riwayat pembelajaran dari suatu kombinasi kelas + mata pelajaran.
+Mengambil riwayat pembelajaran beserta ringkasan nilai. `student_count` dihitung dari siswa aktif pada tahun ajaran class subject.
 
 ### Response
 
 ```json
-[
-    {
-        "id": 1,
-        "class_subject_id": 5,
-        "lesson_date": "2026-09-17",
-        "title": "Persamaan Linear",
-        "description": "Pembahasan persamaan linear satu variabel"
-    }
-]
+{
+    "meta": {
+        "id": 5,
+        "subject": { "id": 3, "name": "Matematika" },
+        "classroom": {
+            "id": 2,
+            "name": "X RPL 1",
+            "grade_level": 10,
+            "student_count": 32
+        }
+    },
+    "data": [
+        {
+            "id": 1,
+            "material": "Persamaan Linear",
+            "date": "2026-09-17",
+            "average": 82,
+            "assessed": 30,
+            "totalStudents": 32
+        }
+    ]
+}
 ```
 
 ---
@@ -790,7 +984,7 @@ Mengambil riwayat pembelajaran dari suatu kombinasi kelas + mata pelajaran.
 GET /api/class-subjects/{classSubject}/lessons/{dailyLesson}
 ```
 
-Mengambil detail pembelajaran beserta progress siswa.
+Mengambil detail pembelajaran beserta relasi `classSubject.subject` dan `classSubject.schoolClass` dalam `data`.
 
 ---
 
@@ -800,23 +994,36 @@ Mengambil detail pembelajaran beserta progress siswa.
 POST /api/class-subjects/{classSubject}/lessons
 ```
 
+Membuat pembelajaran sekaligus progress siswa dalam satu transaksi.
+
 ### Payload
 
 ```json
 {
     "lesson_date": "2026-09-17",
     "title": "Persamaan Linear",
-    "description": "Pembahasan persamaan linear satu variabel"
+    "description": "Pembahasan persamaan linear satu variabel",
+    "progress": [
+        {
+            "student_id": 20,
+            "score": 85,
+            "teacher_note": "Sudah memahami materi."
+        }
+    ]
 }
 ```
 
 ### Fields
 
-| Field         | Type   | Required | Description            |
-| ------------- | ------ | -------- | ---------------------- |
-| `lesson_date` | date   | Yes      | Tanggal pembelajaran   |
-| `title`       | string | Yes      | Judul/materi           |
-| `description` | string | No       | Deskripsi pembelajaran |
+| Field                     | Type   | Required | Description                 |
+| ------------------------- | ------ | -------- | --------------------------- |
+| `lesson_date`             | date   | Yes      | Tanggal pembelajaran        |
+| `title`                   | string | Yes      | Judul/materi, maks. 150     |
+| `description`             | string | No       | Deskripsi pembelajaran      |
+| `progress`                | array  | Yes      | Minimal satu progress siswa |
+| `progress.*.student_id`   | integer| Yes      | ID siswa                    |
+| `progress.*.score`        | integer| Yes      | Nilai 1–100                 |
+| `progress.*.teacher_note` | string | No       | Catatan guru                |
 
 ---
 
@@ -836,6 +1043,8 @@ PUT /api/class-subjects/{classSubject}/lessons/{dailyLesson}
 }
 ```
 
+Payload tidak mengubah `progress` siswa.
+
 ---
 
 ## 11.5 Delete Daily Lesson
@@ -848,17 +1057,13 @@ DELETE /api/class-subjects/{classSubject}/lessons/{dailyLesson}
 
 # 12. Student Daily Progress
 
-Mengatur tingkat pemahaman siswa pada pembelajaran tertentu.
+Mengatur nilai (`score`) siswa pada pembelajaran tertentu. Progress dibuat saat `POST /api/class-subjects/{classSubject}/lessons`; tidak ada endpoint `POST /api/lessons/{dailyLesson}/progress`.
 
-## Understanding Level
-
-Nilai yang tersedia:
+## Score
 
 ```text
-SANGAT_PAHAM
-PAHAM
-CUKUP
-BELUM_PAHAM
+score: integer 1–100
+teacher_note: string|null
 ```
 
 ---
@@ -872,144 +1077,129 @@ GET /api/lessons/{dailyLesson}/progress
 ### Response
 
 ```json
-[
-    {
-        "id": 1,
-        "daily_lesson_id": 10,
-        "student_id": 20,
-        "understanding_level": "PAHAM",
-        "teacher_note": null,
-        "student": {
-            "id": 20,
-            "nisn": "0012345678",
-            "full_name": "Ahmad Fauzan"
-        }
-    }
-]
-```
-
----
-
-## 12.2 Save Student Progress
-
-```http
-POST /api/lessons/{dailyLesson}/progress
-```
-
-Menyimpan progress banyak siswa sekaligus.
-
-### Payload
-
-```json
 {
-    "progress": [
+    "data": [
         {
+            "id": 1,
+            "daily_lesson_id": 10,
             "student_id": 20,
-            "understanding_level": "SANGAT_PAHAM",
-            "teacher_note": null
-        },
-        {
-            "student_id": 21,
-            "understanding_level": "PAHAM",
-            "teacher_note": "Sudah memahami materi."
-        },
-        {
-            "student_id": 22,
-            "understanding_level": "CUKUP",
-            "teacher_note": "Masih perlu latihan."
-        },
-        {
-            "student_id": 23,
-            "understanding_level": "BELUM_PAHAM",
-            "teacher_note": "Perlu pendampingan lebih lanjut."
+            "score": 85,
+            "teacher_note": null,
+            "student": {
+                "id": 20,
+                "nisn": "0012345678",
+                "full_name": "Ahmad Fauzan"
+            }
         }
     ]
 }
 ```
 
-### Fields
-
-| Field                            | Type    | Required | Description           |
-| -------------------------------- | ------- | -------- | --------------------- |
-| `progress`                       | array   | Yes      | Daftar progress siswa |
-| `progress.*.student_id`          | integer | Yes      | ID siswa              |
-| `progress.*.understanding_level` | string  | Yes      | Tingkat pemahaman     |
-| `progress.*.teacher_note`        | string  | No       | Catatan guru          |
-
-Endpoint ini menggunakan `updateOrCreate`, sehingga bisa digunakan untuk **simpan pertama kali maupun menyimpan perubahan**.
-
 ---
 
-## 12.3 Update Student Progress
+## 12.2 Update Student Progress
 
 ```http
 PUT /api/lessons/{dailyLesson}/progress/{student}
 ```
 
+Mengubah progress yang sudah ada; progress tidak ditemukan menghasilkan 404.
+
 ### Payload
 
 ```json
 {
-    "understanding_level": "SANGAT_PAHAM",
+    "score": 90,
     "teacher_note": "Sudah menguasai materi."
 }
 ```
+
+### Fields
+
+| Field          | Type    | Required | Description      |
+| -------------- | ------- | -------- | ---------------- |
+| `score`        | integer | Yes      | Nilai 1–100      |
+| `teacher_note` | string  | No       | Catatan guru     |
 
 ---
 
 # 13. Endpoint Summary
 
-| Method | Endpoint                                    | Description            |
-| ------ | ------------------------------------------- | ---------------------- |
-| GET    | `/academic-years`                           | List tahun ajaran      |
-| POST   | `/academic-years`                           | Tambah tahun ajaran    |
-| GET    | `/academic-years/{id}`                      | Detail tahun ajaran    |
-| PUT    | `/academic-years/{id}`                      | Edit tahun ajaran      |
-| DELETE | `/academic-years/{id}`                      | Hapus tahun ajaran     |
-| GET    | `/classes`                                  | List kelas             |
-| POST   | `/classes`                                  | Tambah kelas           |
-| GET    | `/classes/{id}`                             | Detail kelas           |
-| PUT    | `/classes/{id}`                             | Edit kelas             |
-| DELETE | `/classes/{id}`                             | Hapus kelas            |
-| GET    | `/subjects`                                 | List mapel             |
-| POST   | `/subjects`                                 | Tambah mapel           |
-| GET    | `/subjects/{id}`                            | Detail mapel           |
-| PUT    | `/subjects/{id}`                            | Edit mapel             |
-| DELETE | `/subjects/{id}`                            | Hapus mapel            |
-| GET    | `/students`                                 | List siswa             |
-| POST   | `/students`                                 | Tambah siswa           |
-| GET    | `/students/{id}`                            | Detail siswa           |
-| PUT    | `/students/{id}`                            | Edit siswa             |
-| DELETE | `/students/{id}`                            | Hapus siswa            |
-| GET    | `/classes/{id}/students`                    | Siswa dalam kelas      |
-| POST   | `/classes/{id}/students`                    | Tambah siswa ke kelas  |
-| DELETE | `/classes/{id}/students/{student}`          | Hapus siswa dari kelas |
-| GET    | `/classes/{id}/subjects`                    | Mapel/guru kelas       |
-| POST   | `/classes/{id}/subjects`                    | Assign mapel + guru    |
-| PUT    | `/classes/{id}/subjects/{classSubject}`     | Edit assignment        |
-| DELETE | `/classes/{id}/subjects/{classSubject}`     | Hapus assignment       |
-| GET    | `/classes/{id}/homeroom-teacher`            | Lihat wali kelas       |
-| PUT    | `/classes/{id}/homeroom-teacher`            | Assign/ubah wali kelas |
-| DELETE | `/classes/{id}/homeroom-teacher`            | Hapus wali kelas       |
-| GET    | `/extracurriculars`                         | List ekstrakurikuler   |
-| POST   | `/extracurriculars`                         | Tambah ekstrakurikuler |
-| GET    | `/extracurriculars/{id}`                    | Detail ekstrakurikuler |
-| PUT    | `/extracurriculars/{id}`                    | Edit ekstrakurikuler   |
-| DELETE | `/extracurriculars/{id}`                    | Hapus ekstrakurikuler  |
-| GET    | `/extracurriculars/{id}/teachers`           | List guru ekskul       |
-| POST   | `/extracurriculars/{id}/teachers`           | Assign guru ekskul     |
-| DELETE | `/extracurriculars/{id}/teachers/{teacher}` | Hapus guru ekskul      |
-| GET    | `/extracurriculars/{id}/students`           | List siswa ekskul      |
-| POST   | `/extracurriculars/{id}/students`           | Tambah siswa ekskul    |
-| DELETE | `/extracurriculars/{id}/students/{student}` | Hapus siswa ekskul     |
-| GET    | `/class-subjects/{id}/lessons`              | Riwayat pembelajaran   |
-| POST   | `/class-subjects/{id}/lessons`              | Tambah pembelajaran    |
-| GET    | `/class-subjects/{id}/lessons/{lesson}`     | Detail pembelajaran    |
-| PUT    | `/class-subjects/{id}/lessons/{lesson}`     | Edit pembelajaran      |
-| DELETE | `/class-subjects/{id}/lessons/{lesson}`     | Hapus pembelajaran     |
-| GET    | `/lessons/{id}/progress`                    | List progress siswa    |
-| POST   | `/lessons/{id}/progress`                    | Simpan progress siswa  |
-| PUT    | `/lessons/{id}/progress/{student}`          | Edit progress siswa    |
+| Method | Endpoint                                    | Description                 |
+| ------ | ------------------------------------------- | --------------------------- |
+| GET    | `/user`                                     | User yang sedang login      |
+| POST   | `/logout`                                   | Logout                      |
+| GET    | `/profile`                                  | Profil user                 |
+| PUT    | `/profile`                                  | Ubah nama lengkap           |
+| PUT    | `/profile/password`                         | Ubah kata sandi             |
+| GET    | `/dashboard`                                | Ringkasan dashboard         |
+| GET    | `/teacher/classes`                          | Kelas yang diampu           |
+| GET    | `/teacher/homeroom-classes`                 | Kelas wali kelas            |
+| GET    | `/teacher/classes/{schoolClass}`            | Detail kelas guru           |
+| GET    | `/teacher/classes/{schoolClass}/progress`   | Progress kelas guru         |
+| GET    | `/academic-years`                           | List tahun ajaran           |
+| POST   | `/academic-years`                           | Tambah tahun ajaran         |
+| GET    | `/academic-years/{id}`                      | Detail tahun ajaran         |
+| PUT    | `/academic-years/{id}`                      | Edit tahun ajaran           |
+| DELETE | `/academic-years/{id}`                      | Hapus tahun ajaran          |
+| POST   | `/academic-years/{id}/activate`             | Aktifkan tahun ajaran       |
+| GET    | `/classes`                                  | List kelas                  |
+| POST   | `/classes`                                  | Tambah kelas                |
+| GET    | `/classes/{id}`                             | Detail kelas                |
+| PUT    | `/classes/{id}`                             | Edit kelas                  |
+| DELETE | `/classes/{id}`                             | Hapus kelas                 |
+| GET    | `/subjects`                                 | List mapel                  |
+| POST   | `/subjects`                                 | Tambah mapel                |
+| GET    | `/subjects/{id}`                            | Detail mapel                |
+| PUT    | `/subjects/{id}`                            | Edit mapel                  |
+| DELETE | `/subjects/{id}`                            | Hapus mapel                 |
+| GET    | `/students`                                 | List siswa                  |
+| POST   | `/students`                                 | Tambah siswa                |
+| GET    | `/students/{id}`                            | Detail siswa                |
+| PUT    | `/students/{id}`                            | Edit siswa                  |
+| DELETE | `/students/{id}`                            | Hapus siswa                 |
+| GET    | `/teachers`                                 | List guru                   |
+| POST   | `/teachers`                                 | Tambah guru                 |
+| GET    | `/teachers/{id}`                            | Detail guru                 |
+| PUT    | `/teachers/{id}`                            | Edit guru                   |
+| DELETE | `/teachers/{id}`                            | Hapus guru                  |
+| GET    | `/classes/{id}/students`                    | Siswa dalam kelas           |
+| POST   | `/classes/{id}/students`                    | Tambah siswa ke kelas       |
+| DELETE | `/classes/{id}/students/{student}`          | Hapus siswa dari kelas      |
+| GET    | `/classes/{id}/subjects`                    | Mapel/guru kelas            |
+| POST   | `/classes/{id}/subjects`                    | Assign mapel + guru         |
+| PUT    | `/classes/{id}/subjects/{classSubject}`     | Edit assignment             |
+| DELETE | `/classes/{id}/subjects/{classSubject}`     | Hapus assignment            |
+| GET    | `/classes/{id}/homeroom-teacher`            | Lihat wali kelas            |
+| PUT    | `/classes/{id}/homeroom-teacher`            | Assign/ubah wali kelas      |
+| DELETE | `/classes/{id}/homeroom-teacher`            | Hapus wali kelas            |
+| GET    | `/extracurriculars`                         | List ekstrakurikuler        |
+| POST   | `/extracurriculars`                         | Tambah ekstrakurikuler      |
+| GET    | `/extracurriculars/{id}`                    | Detail ekstrakurikuler      |
+| PUT    | `/extracurriculars/{id}`                    | Edit ekstrakurikuler        |
+| DELETE | `/extracurriculars/{id}`                    | Hapus ekstrakurikuler       |
+| GET    | `/extracurriculars/{id}/teachers`           | List guru ekskul            |
+| POST   | `/extracurriculars/{id}/teachers`           | Assign guru ekskul          |
+| DELETE | `/extracurriculars/{id}/teachers/{teacher}` | Hapus guru ekskul           |
+| GET    | `/extracurriculars/{id}/students`           | List siswa ekskul           |
+| POST   | `/extracurriculars/{id}/students`           | Tambah siswa ekskul         |
+| DELETE | `/extracurriculars/{id}/students/{student}` | Hapus siswa ekskul          |
+| GET    | `/class-subjects/{id}/lessons`              | Riwayat pembelajaran        |
+| POST   | `/class-subjects/{id}/lessons`              | Tambah pembelajaran         |
+| GET    | `/class-subjects/{id}/lessons/{lesson}`     | Detail pembelajaran         |
+| PUT    | `/class-subjects/{id}/lessons/{lesson}`     | Edit pembelajaran           |
+| DELETE | `/class-subjects/{id}/lessons/{lesson}`     | Hapus pembelajaran          |
+| GET    | `/class-subjects/{id}/students`             | Siswa pada class subject    |
+| GET    | `/class-subjects/{id}/evaluation`           | Rekap nilai evaluasi        |
+| GET    | `/class-subjects/{id}/report/pdf`           | PDF laporan kelas           |
+| GET    | `/students/{id}/report/pdf`                 | PDF laporan siswa           |
+| GET    | `/lessons/{id}/progress`                    | List progress siswa         |
+| PUT    | `/lessons/{id}/progress/{student}`          | Edit progress siswa         |
+| GET    | `/class-subjects/{id}/attendances`          | List absensi                |
+| POST   | `/class-subjects/{id}/attendances`          | Tambah absensi              |
+| GET    | `/attendances/{attendance}`                 | Detail absensi              |
+| PUT    | `/attendances/{attendance}`                 | Edit absensi                |
+| DELETE | `/attendances/{attendance}`                 | Hapus absensi               |
 
 ---
 
@@ -1039,13 +1229,14 @@ Academic Year
 ```text
 Login
   ↓
-Assigned Classes
+Dashboard / Profile
+  ↓
+Assigned Classes / Homeroom Classes
   ↓
 Class Subject
-  ↓
-Daily Lessons
-  ↓
-Student Daily Progress
+  ├── Daily Lessons → Student Daily Progress
+  ├── Evaluation
+  └── Attendance
 ```
 
 ## Riwayat Akademik
@@ -1074,15 +1265,394 @@ Progress baru
 
 Data tahun ajaran sebelumnya tetap tersimpan sehingga perubahan kelas atau guru pada tahun berikutnya tidak menghilangkan histori akademik.
 
+---
+
+# 15. Profile
+
+## 15.1 Get Profile
+
+```http
+GET /api/profile
+```
+
+Alias dari `GET /api/user`.
+
+### Response
+
+```json
+{
+    "user": {
+        "id": 8,
+        "username": "guru.ahmad",
+        "full_name": "Ahmad Fauzan",
+        "role": "teacher"
+    }
+}
+```
+
+---
+
+## 15.2 Update Profile
+
+```http
+PUT /api/profile
+```
+
+### Payload
+
+```json
+{
+    "full_name": "Ahmad Fauzan"
+}
+```
+
+| Field       | Type   | Required | Description       |
+| ----------- | ------ | -------- | ----------------- |
+| `full_name` | string | Yes      | Nama lengkap, maks. 100 |
+
+### Response
+
+```json
+{
+    "message": "Profil berhasil diperbarui.",
+    "data": {
+        "id": 8,
+        "nip": "198001012023011001",
+        "username": "guru.ahmad",
+        "full_name": "Ahmad Fauzan",
+        "role": "teacher"
+    }
+}
+```
+
+---
+
+## 15.3 Update Password
+
+```http
+PUT /api/profile/password
+```
+
+### Payload
+
+```json
+{
+    "current_password": "password_lama",
+    "password": "password_baru",
+    "password_confirmation": "password_baru"
+}
+```
+
+| Field                   | Type   | Required | Description                     |
+| ----------------------- | ------ | -------- | ------------------------------- |
+| `current_password`      | string | Yes      | Harus cocok dengan kata sandi aktif |
+| `password`              | string | Yes      | Minimal 8 karakter, `confirmed` |
+| `password_confirmation` | string | Yes      | Sama dengan `password`          |
+
+### Response
+
+```json
+{
+    "message": "Kata sandi berhasil diperbarui."
+}
+```
+
+---
+
+# 16. Dashboard
+
+## 16.1 Get Dashboard Summary
+
+```http
+GET /api/dashboard
+```
+
+Tahun ajaran yang ditampilkan adalah yang aktif, atau tahun ajaran terbaru jika tidak ada yang aktif.
+
+### Response
+
+```json
+{
+    "data": {
+        "totals": {
+            "students": 640,
+            "teachers": 48,
+            "classes": 24,
+            "subjects": 12,
+            "extracurriculars": 6
+        },
+        "academic_year": {
+            "id": 1,
+            "start_year": 2026,
+            "end_year": 2027
+        },
+        "class_progress": [
+            {
+                "id": 2,
+                "name": "X RPL 1",
+                "grade_level": 10,
+                "students": 32,
+                "progress": 78
+            }
+        ]
+    }
+}
+```
+
+`class_progress.progress` adalah persentase siswa aktif yang memiliki minimal satu progress pada pembelajaran tahun ajaran tersebut (maks. 100).
+
+---
+
+# 17. Class Subject Classroom
+
+## 17.1 Get Class Subject Students
+
+```http
+GET /api/class-subjects/{classSubject}/students
+```
+
+Siswa aktif pada kelas dan tahun ajaran class subject.
+
+### Response
+
+```json
+{
+    "data": [
+        { "id": 20, "name": "Ahmad Fauzan", "nis": "0012345678" }
+    ]
+}
+```
+
+---
+
+## 17.2 Get Class Subject Evaluation
+
+```http
+GET /api/class-subjects/{classSubject}/evaluation
+```
+
+Rekap nilai per siswa untuk setiap pembelajaran pada class subject.
+
+### Response
+
+```json
+{
+    "data": {
+        "classroom": {
+            "classSubjectId": 5,
+            "subject": "Matematika",
+            "class": "X RPL 1",
+            "academicYear": "2026/2027"
+        },
+        "lessons": [
+            { "id": 10, "date": "2026-09-17", "title": "Persamaan Linear" }
+        ],
+        "students": [
+            {
+                "id": 20,
+                "name": "Ahmad Fauzan",
+                "nis": "0012345678",
+                "scores": [85, null],
+                "notes": "Sudah memahami materi."
+            }
+        ]
+    }
+}
+```
+
+`scores` mengikuti urutan `lessons` (`null` jika belum dinilai); `notes` adalah catatan guru terakhir yang tidak kosong.
+
+---
+
+# 18. Attendance
+
+Status yang diterima: `present`, `permission`, `sick`, `absent`. Kolom `meeting_number` dan `topic` bersifat nullable (migrasi `2026_11_22_000002`).
+
+## 18.1 Get Attendances
+
+```http
+GET /api/class-subjects/{classSubject}/attendances?search=persamaan&month=9
+```
+
+### Query Parameters
+
+| Parameter | Type    | Required | Description                          |
+| --------- | ------- | -------- | ------------------------------------ |
+| `search`  | string  | No       | Filter `topic` atau `notes`          |
+| `month`   | integer | No       | Filter bulan pada `date` (1–12)      |
+
+### Response
+
+```json
+{
+    "meta": {
+        "id": 5,
+        "subject": { "id": 3, "name": "Matematika" },
+        "classroom": { "id": 2, "name": "X RPL 1", "grade_level": 10 },
+        "teacher": { "id": 8, "full_name": "Ahmad Fauzan" }
+    },
+    "data": [
+        {
+            "id": 1,
+            "date": "2026-09-17",
+            "meeting_number": 1,
+            "topic": "Persamaan Linear",
+            "notes": null,
+            "total_students": 32,
+            "present": 30,
+            "permission": 1,
+            "sick": 0,
+            "absent": 1
+        }
+    ]
+}
+```
+
+Data diurutkan dari tanggal terbaru.
+
+---
+
+## 18.2 Create Attendance
+
+```http
+POST /api/class-subjects/{classSubject}/attendances
+```
+
+### Payload
+
+```json
+{
+    "date": "2026-09-17",
+    "meeting_number": 1,
+    "topic": "Persamaan Linear",
+    "notes": "Pertemuan pertama",
+    "attendance": [
+        { "student_id": 20, "status": "present", "note": null },
+        { "student_id": 21, "status": "sick", "note": "Demam" }
+    ]
+}
+```
+
+### Fields
+
+| Field                    | Type    | Required | Description                         |
+| ------------------------ | ------- | -------- | ----------------------------------- |
+| `date`                   | date    | Yes      | Tanggal absensi                     |
+| `meeting_number`         | integer | No       | Nomor pertemuan, minimal 1; nullable |
+| `topic`                  | string  | No       | Maks. 150 karakter; nullable        |
+| `notes`                  | string  | No       | Catatan umum; nullable              |
+| `attendance`             | array   | Yes      | Minimal satu baris; gunakan kunci ini, bukan `statuses` |
+| `attendance.*.student_id`| integer | Yes      | ID siswa anggota aktif kelas        |
+| `attendance.*.status`    | string  | Yes      | `present`/`permission`/`sick`/`absent` |
+| `attendance.*.note`      | string  | No       | Catatan per siswa; nullable         |
+
+Absensi pada tanggal yang sama untuk class subject yang sama ditolak (422). Siswa harus berstatus aktif pada tahun ajaran class subject.
+
+### Response
+
+```json
+{
+    "message": "Absensi berhasil disimpan.",
+    "data": {
+        "id": 1,
+        "date": "2026-09-17",
+        "meeting_number": 1,
+        "topic": "Persamaan Linear",
+        "notes": "Pertemuan pertama",
+        "class_subject": {
+            "id": 5,
+            "subject": { "id": 3, "name": "Matematika" },
+            "classroom": { "id": 2, "name": "X RPL 1" }
+        },
+        "details": [
+            {
+                "id": 1,
+                "student_id": 20,
+                "status": "present",
+                "note": null,
+                "student": { "id": 20, "nisn": "0012345678", "full_name": "Ahmad Fauzan" }
+            }
+        ]
+    }
+}
+```
+
+Status 201.
+
+---
+
+## 18.3 Get Attendance
+
+```http
+GET /api/attendances/{attendance}
+```
+
+Mengembalikan `data` dengan bentuk yang sama seperti `18.2 Response`.
+
+---
+
+## 18.4 Update Attendance
+
+```http
+PUT /api/attendances/{attendance}
+```
+
+Payload sama seperti 18.2. Baris `attendance` yang tidak dikirim akan dihapus, sedangkan baris yang tetap dikirim diperbarui.
+
+### Response
+
+```json
+{
+    "message": "Absensi berhasil diperbarui.",
+    "data": {
+        "id": 1,
+        "date": "2026-09-17",
+        "meeting_number": 1,
+        "topic": "Persamaan Linear",
+        "notes": "Pertemuan pertama",
+        "class_subject": {
+            "id": 5,
+            "subject": { "id": 3, "name": "Matematika" },
+            "classroom": { "id": 2, "name": "X RPL 1" }
+        },
+        "details": [
+            {
+                "id": 1,
+                "student_id": 20,
+                "status": "permission",
+                "note": "Izin keluarga",
+                "student": { "id": 20, "nisn": "0012345678", "full_name": "Ahmad Fauzan" }
+            }
+        ]
+    }
+}
+```
+
+---
+
+## 18.5 Delete Attendance
+
+```http
+DELETE /api/attendances/{attendance}
+```
+
+### Response
+
+```json
+{
+    "message": "Absensi berhasil dihapus."
+}
+```
+
+---
+
 # API Endpoint
 
 Base URL:
 
 `/api`
 
-Semua endpoint berada di dalam middleware:
-
-`auth:sanctum`
+Semua endpoint berada di dalam middleware `auth:sanctum` dengan autentikasi cookie session Sanctum SPA.
 
 ---
 
@@ -1095,11 +1665,32 @@ Semua endpoint berada di dalam middleware:
 
 ---
 
+## Profile
+
+| Method | Endpoint               | Fungsi                    |
+| ------ | ---------------------- | ------------------------- |
+| GET    | `/api/profile`         | Profil user               |
+| PUT    | `/api/profile`         | Update nama lengkap       |
+| PUT    | `/api/profile/password`| Update kata sandi         |
+
+---
+
+## Dashboard
+
+| Method | Endpoint       | Fungsi                  |
+| ------ | -------------- | ----------------------- |
+| GET    | `/api/dashboard` | Ringkasan dashboard   |
+
+---
+
 ## Teacher
 
-| Method | Endpoint               | Fungsi                                               |
-| ------ | ---------------------- | ---------------------------------------------------- |
-| GET    | `/api/teacher/classes` | Mendapatkan kelas yang diampu guru yang sedang login |
+| Method | Endpoint                                  | Fungsi                                               |
+| ------ | ----------------------------------------- | ---------------------------------------------------- |
+| GET    | `/api/teacher/classes`                    | Mendapatkan kelas yang diampu guru yang sedang login |
+| GET    | `/api/teacher/homeroom-classes`           | Kelas wali kelas guru                                |
+| GET    | `/api/teacher/classes/{schoolClass}`      | Detail kelas guru                                    |
+| GET    | `/api/teacher/classes/{schoolClass}/progress` | Progress kelas guru                              |
 
 ---
 
@@ -1112,6 +1703,7 @@ Semua endpoint berada di dalam middleware:
 | GET       | `/api/academic-years/{academicYear}` | Detail tahun akademik |
 | PUT/PATCH | `/api/academic-years/{academicYear}` | Update tahun akademik |
 | DELETE    | `/api/academic-years/{academicYear}` | Hapus tahun akademik  |
+| POST      | `/api/academic-years/{academicYear}/activate` | Aktifkan tahun akademik |
 
 ---
 
@@ -1182,6 +1774,13 @@ Semua endpoint berada di dalam middleware:
 | PUT    | `/api/classes/{schoolClass}/subjects/{classSubject}` | Mengubah penempatan guru/mapel      |
 | DELETE | `/api/classes/{schoolClass}/subjects/{classSubject}` | Menghapus penempatan                |
 
+### Class Subject Classroom
+
+| Method | Endpoint                                     | Fungsi                       |
+| ------ | -------------------------------------------- | ---------------------------- |
+| GET    | `/api/class-subjects/{classSubject}/students`| Daftar siswa pada class subject |
+| GET    | `/api/class-subjects/{classSubject}/evaluation` | Rekap nilai evaluasi       |
+
 ---
 
 ## Homeroom Teacher
@@ -1239,5 +1838,25 @@ Semua endpoint berada di dalam middleware:
 | Method | Endpoint                                        | Fungsi                   |
 | ------ | ----------------------------------------------- | ------------------------ |
 | GET    | `/api/lessons/{dailyLesson}/progress`           | Daftar progress siswa    |
-| POST   | `/api/lessons/{dailyLesson}/progress`           | Menyimpan progress siswa |
 | PUT    | `/api/lessons/{dailyLesson}/progress/{student}` | Update progress siswa    |
+
+---
+
+## Attendance
+
+| Method | Endpoint                                        | Fungsi           |
+| ------ | ----------------------------------------------- | ---------------- |
+| GET    | `/api/class-subjects/{classSubject}/attendances` | Daftar absensi   |
+| POST   | `/api/class-subjects/{classSubject}/attendances` | Tambah absensi   |
+| GET    | `/api/attendances/{attendance}`                 | Detail absensi   |
+| PUT    | `/api/attendances/{attendance}`                 | Update absensi   |
+| DELETE | `/api/attendances/{attendance}`                 | Hapus absensi    |
+
+---
+
+## Reports
+
+| Method | Endpoint                                      | Fungsi             |
+| ------ | --------------------------------------------- | ------------------ |
+| GET    | `/api/class-subjects/{classSubject}/report/pdf`| PDF laporan kelas  |
+| GET    | `/api/students/{student}/report/pdf`          | PDF laporan siswa  |

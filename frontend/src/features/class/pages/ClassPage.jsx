@@ -16,6 +16,7 @@ const ClassPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [className, setClassName] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError } = useClasses(search);
@@ -24,19 +25,21 @@ const ClassPage = () => {
   const updateMutation = useUpdateClass();
   const deleteMutation = useDeleteClass();
 
-  const classes = data?.data ?? [];
+  const classes = data ?? [];
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const openCreateModal = () => {
     setEditingClass(null);
     setClassName("");
+    setGradeLevel("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (classItem) => {
     setEditingClass(classItem);
     setClassName(classItem.name);
+    setGradeLevel(classItem.grade_level ?? "");
     setIsModalOpen(true);
   };
 
@@ -44,6 +47,7 @@ const ClassPage = () => {
     setIsModalOpen(false);
     setEditingClass(null);
     setClassName("");
+    setGradeLevel("");
     createMutation.reset();
     updateMutation.reset();
   };
@@ -52,8 +56,9 @@ const ClassPage = () => {
     event.preventDefault();
 
     const name = className.trim();
+    const level = gradeLevel.trim();
 
-    if (!name) {
+    if (!name || !level) {
       return;
     }
 
@@ -62,6 +67,7 @@ const ClassPage = () => {
         {
           id: editingClass.id,
           name,
+          grade_level: level,
         },
         {
           onSuccess: closeModal,
@@ -74,6 +80,7 @@ const ClassPage = () => {
     createMutation.mutate(
       {
         name,
+        grade_level: level,
       },
       {
         onSuccess: closeModal,
@@ -125,9 +132,9 @@ const ClassPage = () => {
         <div className="rounded-xl border border-border bg-card px-6 py-14 text-center">
           <p className="text-sm text-destructive">Gagal memuat data kelas.</p>
         </div>
-      ) : data.length > 0 ? (
+      ) : classes.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {data.map((classItem) => (
+          {classes.map((classItem) => (
             <ClassCard
               key={classItem.id}
               item={classItem}
@@ -171,7 +178,7 @@ const ClassPage = () => {
 
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !className.trim()}
+              disabled={isSubmitting || !className.trim() || !gradeLevel.trim()}
             >
               {isSubmitting
                 ? "Menyimpan..."
@@ -182,15 +189,27 @@ const ClassPage = () => {
           </>
         }
       >
-        <Input
-          label="Nama kelas"
-          id="className"
-          name="className"
-          placeholder="Contoh: X IPA 1"
-          value={className}
-          onChange={(event) => setClassName(event.target.value)}
-          required
-        />
+        <div className="space-y-4">
+          <Input
+            label="Nama kelas"
+            id="className"
+            name="className"
+            placeholder="Contoh: X IPA 1"
+            value={className}
+            onChange={(event) => setClassName(event.target.value)}
+            required
+          />
+
+          <Input
+            label="Tingkat"
+            id="gradeLevel"
+            name="gradeLevel"
+            placeholder="Contoh: X, XI, XII, 7, 8"
+            value={gradeLevel}
+            onChange={(event) => setGradeLevel(event.target.value)}
+            required
+          />
+        </div>
 
         {(createMutation.isError || updateMutation.isError) && (
           <p className="mt-2 text-sm text-destructive">

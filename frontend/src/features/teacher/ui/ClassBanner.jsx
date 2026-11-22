@@ -7,10 +7,10 @@ const ClassBanner = ({ data }) => {
 
   return (
     <div className="bg-card p-6 border border-border rounded-xl">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-sm text-muted"> Kelas </span>
-        <span class="text-sm text-muted"> / </span>
-        <span class="text-sm text-muted"> {data.subject?.name} </span>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm text-muted"> Kelas </span>
+        <span className="text-sm text-muted"> / </span>
+        <span className="text-sm text-muted"> {data.subject?.name} </span>
       </div>
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>

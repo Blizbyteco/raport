@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,6 +49,11 @@ class AcademicYearController extends Controller
                 'max:2100',
             ],
 
+            'is_active' => [
+                'sometimes',
+                'boolean',
+            ],
+
             'terms' => [
                 'required',
                 'array',
@@ -71,6 +75,8 @@ class AcademicYearController extends Controller
                 'date',
             ],
         ]);
+
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
 
         if ((int) $validated['end_year'] !== (int) $validated['start_year'] + 1) {
             return response()->json([
@@ -96,9 +102,14 @@ class AcademicYearController extends Controller
         }
 
         $academicYear = DB::transaction(function () use ($validated) {
+            if ($validated['is_active']) {
+                AcademicYear::query()->update(['is_active' => false]);
+            }
+
             $academicYear = AcademicYear::create([
                 'start_year' => $validated['start_year'],
                 'end_year' => $validated['end_year'],
+                'is_active' => $validated['is_active'],
             ]);
 
             foreach ($validated['terms'] as $term) {
@@ -157,6 +168,11 @@ class AcademicYearController extends Controller
                 'max:2100',
             ],
 
+            'is_active' => [
+                'sometimes',
+                'boolean',
+            ],
+
             'terms' => [
                 'required',
                 'array',
@@ -208,9 +224,16 @@ class AcademicYearController extends Controller
         }
 
         DB::transaction(function () use ($validated, $academicYear) {
+            if (array_key_exists('is_active', $validated) && $validated['is_active']) {
+                AcademicYear::query()
+                    ->where('id', '!=', $academicYear->id)
+                    ->update(['is_active' => false]);
+            }
+
             $academicYear->update([
                 'start_year' => $validated['start_year'],
                 'end_year' => $validated['end_year'],
+                'is_active' => $validated['is_active'] ?? $academicYear->is_active,
             ]);
 
             foreach ($validated['terms'] as $term) {
@@ -234,6 +257,31 @@ class AcademicYearController extends Controller
 
         return response()->json([
             'message' => 'Tahun ajaran berhasil diperbarui.',
+            'data' => $academicYear,
+        ]);
+    }
+
+    /**
+     * Activate the specified academic year.
+     */
+    public function activate(AcademicYear $academicYear): JsonResponse
+    {
+        DB::transaction(function () use ($academicYear) {
+            AcademicYear::query()
+                ->where('id', '!=', $academicYear->id)
+                ->update(['is_active' => false]);
+
+            $academicYear->update(['is_active' => true]);
+        });
+
+        $academicYear->load([
+            'terms' => function ($query) {
+                $query->orderBy('start_date');
+            },
+        ]);
+
+        return response()->json([
+            'message' => 'Tahun ajaran berhasil diaktifkan.',
             'data' => $academicYear,
         ]);
     }

@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
+  Award,
   BookOpen,
   CalendarDays,
   TrendingUp,
-  Award,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -21,27 +21,24 @@ import PageHeader from "@/shared/layout/PageHeader";
 import Button from "@/shared/ui/button/Button";
 import Select from "@/shared/ui/form/Select";
 import Table from "@/shared/ui/data-display/Table";
+import useClassSubjectEvaluation from "../hooks/useClassSubjectEvaluation";
 
-import evaluationData from "@/shared/data/evaluationData.json";
+const monthKeys = [
+  "2026-07",
+  "2026-08",
+  "2026-09",
+  "2026-10",
+  "2026-11",
+  "2026-12",
+  "2027-01",
+  "2027-02",
+  "2027-03",
+  "2027-04",
+  "2027-05",
+  "2027-06",
+];
 
-const { classroom, lessons, students } = evaluationData;
-
-const getAverage = (scores) => {
-  const valid = scores.filter((score) => score !== null && score !== undefined);
-
-  if (!valid.length) return 0;
-
-  return Math.round(
-    valid.reduce((sum, score) => sum + score, 0) / valid.length,
-  );
-};
-
-const formatDate = (date) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
+const getMonthKey = (date) => (date ? date.slice(0, 7) : "");
 
 const getMonthName = (monthKey) =>
   new Intl.DateTimeFormat("id-ID", {
@@ -49,54 +46,72 @@ const getMonthName = (monthKey) =>
     year: "numeric",
   }).format(new Date(`${monthKey}-01`));
 
+const formatDate = (date) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
+
+const getAverage = (scores) => {
+  if (!scores.length) return null;
+
+  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+};
+
 const StudentProgressDetailPage = () => {
   const navigate = useNavigate();
-  const { studentId } = useParams();
+  const { classSubjectId, studentId } = useParams();
 
   const [period, setPeriod] = useState("monthly");
-  const [month, setMonth] = useState("2026-09");
+  const [month, setMonth] = useState(monthKeys[0]);
   const [semester, setSemester] = useState("ganjil");
 
-  const student = students.find((item) => String(item.id) === studentId);
+  const { data, isLoading, isError } = useClassSubjectEvaluation(classSubjectId);
 
-  const semesterMonths =
-    semester === "ganjil"
-      ? ["2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"]
-      : ["2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06"];
+  const classroom = data?.data?.classroom ?? {};
+  const allLessons = data?.data?.lessons ?? [];
+  const students = data?.data?.students ?? [];
+  const student = students.find(
+    (item) => String(item.id) === String(studentId),
+  );
+
+  const semesterMonths = useMemo(
+    () =>
+      semester === "ganjil" ? monthKeys.slice(0, 6) : monthKeys.slice(6),
+    [semester],
+  );
 
   const activeLessons = useMemo(() => {
-    if (period === "monthly") {
-      return lessons.filter((lesson) => lesson.date.slice(0, 7) === month);
-    }
+    const keys = period === "monthly" ? [month] : semesterMonths;
 
-    return lessons.filter((lesson) =>
-      semesterMonths.includes(lesson.date.slice(0, 7)),
-    );
-  }, [period, month, semester]);
+    return allLessons.filter((lesson) => keys.includes(getMonthKey(lesson.date)));
+  }, [allLessons, period, month, semesterMonths]);
 
-  if (!student) {
+  if (isLoading) {
+    return <p className="text-sm text-muted">Memuat detail siswa...</p>;
+  }
+
+  if (isError || !student) {
     return (
       <div className="space-y-4">
         <PageHeader
           title="Siswa tidak ditemukan"
           description="Data siswa yang diminta tidak tersedia."
         />
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} />
+        <Button variant="outline" onClick={() => navigate(-1)} icon={ArrowLeft}>
           Kembali
         </Button>
       </div>
     );
   }
 
-  // Score diambil berdasarkan index lesson asli,
-  // karena student.scores mengikuti urutan lessons global.
   const history = activeLessons.map((lesson) => {
-    const globalIndex = lessons.findIndex((item) => item.id === lesson.id);
+    const globalIndex = allLessons.findIndex((item) => item.id === lesson.id);
 
     return {
       ...lesson,
-      score: student.scores[globalIndex],
+      score: student.scores?.[globalIndex],
     };
   });
 
@@ -118,15 +133,18 @@ const StudentProgressDetailPage = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      {/* Header */}
       <div className="space-y-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-primary"
+        <Button
+          variant="ghost"
+          size="S"
+          icon={ArrowLeft}
+          onClick={() =>
+            navigate(`/teacher/class/${classSubjectId}/evaluation`)
+          }
+          className="-ml-2"
         >
-          <ArrowLeft size={16} />
           Kembali ke Evaluasi
-        </button>
+        </Button>
 
         <PageHeader
           title="Detail Perkembangan Siswa"
@@ -134,13 +152,13 @@ const StudentProgressDetailPage = () => {
         />
       </div>
 
-      {/* Student profile */}
       <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-center">
         <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
           {student.name
-            .split(" ")
-            .map((word) => word[0])
+            ?.split(" ")
+            .filter(Boolean)
             .slice(0, 2)
+            .map((word) => word[0])
             .join("")}
         </div>
 
@@ -151,14 +169,8 @@ const StudentProgressDetailPage = () => {
             {classroom.class} · {classroom.subject} · {classroom.academicYear}
           </p>
         </div>
-
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-          <BookOpen size={14} />
-          Detail Akademik
-        </span>
       </section>
 
-      {/* Filters */}
       <section className="rounded-xl border border-border bg-card p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select
@@ -176,20 +188,7 @@ const StudentProgressDetailPage = () => {
               value={month}
               onChange={(event) => setMonth(event.target.value)}
             >
-              {[
-                "2026-07",
-                "2026-08",
-                "2026-09",
-                "2026-10",
-                "2026-11",
-                "2026-12",
-                "2027-01",
-                "2027-02",
-                "2027-03",
-                "2027-04",
-                "2027-05",
-                "2027-06",
-              ].map((monthKey) => (
+              {monthKeys.map((monthKey) => (
                 <option key={monthKey} value={monthKey}>
                   {getMonthName(monthKey)}
                 </option>
@@ -201,14 +200,13 @@ const StudentProgressDetailPage = () => {
               value={semester}
               onChange={(event) => setSemester(event.target.value)}
             >
-              <option value="ganjil">Ganjil 2026/2027</option>
-              <option value="genap">Genap 2026/2027</option>
+              <option value="ganjil">Ganjil</option>
+              <option value="genap">Genap</option>
             </Select>
           )}
         </div>
       </section>
 
-      {/* Summary */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryCard
           icon={BookOpen}
@@ -218,7 +216,7 @@ const StudentProgressDetailPage = () => {
         <SummaryCard
           icon={TrendingUp}
           label="Rata-rata Nilai"
-          value={validScores.length ? average : "-"}
+          value={average ?? "-"}
         />
         <SummaryCard icon={Award} label="Nilai Tertinggi" value={highest} />
         <SummaryCard
@@ -228,7 +226,6 @@ const StudentProgressDetailPage = () => {
         />
       </section>
 
-      {/* Progress chart */}
       <section className="rounded-xl border border-border bg-card p-5">
         <div className="mb-5">
           <h2 className="font-semibold text-foreground">
@@ -248,11 +245,7 @@ const StudentProgressDetailPage = () => {
                 margin={{ top: 8, right: 12, left: -18, bottom: 8 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11 }}
-                  tickLine={false}
-                />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
                 <YAxis
                   domain={[0, 100]}
                   tick={{ fontSize: 11 }}
@@ -283,12 +276,9 @@ const StudentProgressDetailPage = () => {
         )}
       </section>
 
-      {/* Learning history */}
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border p-5">
-          <h2 className="font-semibold text-foreground">
-            Riwayat Pembelajaran
-          </h2>
+          <h2 className="font-semibold text-foreground">Riwayat Pembelajaran</h2>
           <p className="mt-1 text-sm text-muted">
             Rincian materi dan nilai siswa pada periode terpilih.
           </p>
@@ -317,9 +307,7 @@ const StudentProgressDetailPage = () => {
                     {item.title}
                   </span>
                 </Table.Cell>
-                <Table.Cell className="text-center">
-                  {item.score ?? "-"}
-                </Table.Cell>
+                <Table.Cell className="text-center">{item.score ?? "-"}</Table.Cell>
                 <Table.Cell className="text-sm text-muted">
                   {student.notes || "-"}
                 </Table.Cell>
@@ -328,10 +316,8 @@ const StudentProgressDetailPage = () => {
 
             {!history.length && (
               <Table.Row>
-                <Table.Cell colSpan={5}>
-                  <p className="py-8 text-center text-sm text-muted">
-                    Belum ada riwayat pembelajaran pada periode ini.
-                  </p>
+                <Table.Cell colSpan={5} className="py-8 text-center">
+                  Belum ada riwayat pembelajaran pada periode ini.
                 </Table.Cell>
               </Table.Row>
             )}

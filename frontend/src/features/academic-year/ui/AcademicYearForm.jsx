@@ -14,6 +14,7 @@ const defaultFormValues = {
   odd_end_date: "",
   even_start_date: "",
   even_end_date: "",
+  is_active: false,
 };
 
 const AcademicYearForm = ({
@@ -46,6 +47,7 @@ const AcademicYearForm = ({
     const payload = {
       start_year: Number(values.start_year),
       end_year: Number(values.end_year),
+      is_active: Boolean(values.is_active),
       terms: [
         {
           name: "Ganjil",
@@ -107,6 +109,15 @@ const AcademicYearForm = ({
             })}
           />
         </div>
+
+        <label className="mt-4 flex items-center gap-2 px-6 pb-6 text-sm font-medium text-foreground">
+          <input
+            type="checkbox"
+            className="size-4 accent-primary"
+            {...register("is_active")}
+          />
+          Jadikan tahun ajaran aktif
+        </label>
       </section>
 
       <section className="rounded-xl border border-border bg-card">

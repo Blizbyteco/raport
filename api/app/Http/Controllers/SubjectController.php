@@ -7,10 +7,17 @@ use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return response()->json(
-            Subject::orderBy('name')->get()
+            Subject::query()
+                ->when($request->filled('search'), function ($query) use ($request) {
+                    $search = $request->string('search')->toString();
+
+                    $query->where('name', 'like', "%{$search}%");
+                })
+                ->orderBy('name')
+                ->get()
         );
     }
 
@@ -48,7 +55,7 @@ class SubjectController extends Controller
         $subject->delete();
 
         return response()->json([
-            'message' => 'Mata pelajaran berhasil dihapus.'
+            'message' => 'Mata pelajaran berhasil dihapus.',
         ]);
     }
 }

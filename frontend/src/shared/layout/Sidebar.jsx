@@ -5,7 +5,7 @@ import {
   Users,
   BookOpen,
   UserPlus,
-  FileSpreadsheet,
+  ClipboardCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +15,6 @@ import {
   SportShoe,
   Presentation,
   CalendarClock,
-  Trophy,
   HomeIcon,
 } from "lucide-react";
 import { Link, useLocation } from "react-router";
@@ -102,9 +101,9 @@ const menuList = [
         roles: ["teacher"],
       },
       {
-        label: "Ekstrakurikuler",
-        icon: Trophy,
-        path: "/teacher/extracurricular",
+        label: "Monitoring Kelas",
+        icon: ClipboardCheck,
+        path: "/teacher/class/monitoring",
         roles: ["teacher"],
       },
     ],

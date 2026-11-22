@@ -9,12 +9,24 @@ const LearningCard = ({
   average,
   assessed,
   totalStudents,
+  onClick,
 }) => {
   const navigate = useNavigate();
+
+  const handleOpen = () => {
+    if (onClick) onClick();
+    else navigate(`progress/${id}`);
+  };
+
   return (
     <div
-      onClick={() => navigate(`progress/${id}`)}
-      className="w-full text-left rounded-xl border border-border bg-card p-5 transition hover:ring-1 ring-primary"
+      role="button"
+      tabIndex={0}
+      onClick={handleOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") handleOpen();
+      }}
+      className="w-full text-left rounded-xl border border-border bg-card p-5 transition hover:ring-1 ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-4">

@@ -36,9 +36,9 @@ class ClassHomeroomTeacherController extends Controller
 
         $teacher = User::findOrFail($validated['teacher_id']);
 
-        if ($teacher->role !== 'GURU') {
+        if ($teacher->role !== 'teacher') {
             return response()->json([
-                'message' => 'User yang dipilih bukan guru.'
+                'message' => 'User yang dipilih bukan guru.',
             ], 422);
         }
 
@@ -73,7 +73,7 @@ class ClassHomeroomTeacherController extends Controller
             ->delete();
 
         return response()->json([
-            'message' => 'Wali kelas berhasil dihapus.'
+            'message' => 'Wali kelas berhasil dihapus.',
         ]);
     }
 }

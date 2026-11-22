@@ -9,15 +9,22 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = min((int) $request->input('per_page', 20), 200);
+
         $students = Student::query()
+            ->with([
+                'classStudents' => function ($query) {
+                    $query->where('status', 'AKTIF')
+                        ->with(['schoolClass', 'academicYear']);
+                },
+            ])
             ->when(
                 $request->search,
-                fn($query, $search) =>
-                $query->where('full_name', 'like', "%{$search}%")
+                fn ($query, $search) => $query->where('full_name', 'like', "%{$search}%")
                     ->orWhere('nisn', 'like', "%{$search}%")
             )
             ->orderBy('full_name')
-            ->paginate(20);
+            ->paginate($perPage);
 
         return response()->json($students);
     }
@@ -55,7 +62,7 @@ class StudentController extends Controller
                 'required',
                 'string',
                 'max:20',
-                'unique:students,nisn,' . $student->id,
+                'unique:students,nisn,'.$student->id,
             ],
             'full_name' => ['required', 'string', 'max:100'],
             'gender' => ['nullable', 'string', 'size:1'],
@@ -72,7 +79,7 @@ class StudentController extends Controller
         $student->delete();
 
         return response()->json([
-            'message' => 'Siswa berhasil dihapus.'
+            'message' => 'Siswa berhasil dihapus.',
         ]);
     }
 }

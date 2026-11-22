@@ -9,12 +9,14 @@ import AcademicYearTable from "../ui/AcademicYearTable";
 
 import useAcademicYears from "../hooks/useAcademicYears";
 import useDeleteAcademicYear from "../hooks/useDeleteAcademicYear";
+import useActivateAcademicYear from "../hooks/useActivateAcademicYear";
 
 const AcademicYearsPage = () => {
   const navigate = useNavigate();
 
   const { data, isLoading, isError } = useAcademicYears();
   const deleteMutation = useDeleteAcademicYear();
+  const activateMutation = useActivateAcademicYear();
 
   const academicYears = data?.data ?? [];
 
@@ -26,6 +28,16 @@ const AcademicYearsPage = () => {
     if (!confirmed) return;
 
     deleteMutation.mutate(academicYear.id);
+  };
+
+  const handleActivate = (academicYear) => {
+    const confirmed = window.confirm(
+      `Aktifkan tahun akademik ${academicYear.start_year}/${academicYear.end_year}?`,
+    );
+
+    if (!confirmed) return;
+
+    activateMutation.mutate(academicYear.id);
   };
 
   return (
@@ -48,6 +60,7 @@ const AcademicYearsPage = () => {
         isLoading={isLoading}
         isError={isError}
         onDelete={handleDelete}
+        onActivate={handleActivate}
       />
     </div>
   );

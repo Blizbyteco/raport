@@ -43,7 +43,7 @@ const ClassCard = ({ item, onEdit, onDelete }) => {
       <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
         <span className="text-xs sm:text-sm text-muted">Jumlah siswa</span>
         <span className="text-sm font-semibold text-dark">
-          {item.students} siswa
+          {item.students_count ?? 0} siswa
         </span>
       </div>
     </div>

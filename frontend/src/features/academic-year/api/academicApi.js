@@ -29,3 +29,9 @@ export const deleteAcademicYear = async (id) => {
 
   return response.data;
 };
+
+export const activateAcademicYear = async (id) => {
+  const response = await api.post(`/api/academic-years/${id}/activate`);
+
+  return response.data;
+};

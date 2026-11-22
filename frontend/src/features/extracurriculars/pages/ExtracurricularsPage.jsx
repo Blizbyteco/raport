@@ -1,79 +1,108 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
+import Textarea from "@/shared/ui/form/Textarea";
 import Modal from "@/shared/ui/overlay/Modal";
-import { extracurriculars } from "@/shared/data/extracurriculars.json";
-import ExtracurricularCard from "../ui/ExtracurricularCard";
 import PageHeader from "@/shared/layout/PageHeader";
 
+import ExtracurricularCard from "../ui/ExtracurricularCard";
+import useExtracurriculars from "../hooks/useExtracurriculars";
+import useCreateExtracurricular from "../hooks/useCreateExtracurricular";
+import useUpdateExtracurricular from "../hooks/useUpdateExtracurricular";
+import useDeleteExtracurricular from "../hooks/useDeleteExtracurricular";
+
+const emptyForm = { name: "", description: "", is_active: true };
+
 const ExtracurricularsPage = () => {
-  const [items, setItems] = useState(extracurriculars);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState(null);
-  const [name, setName] = useState("");
+  const [form, setForm] = useState(emptyForm);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [search, setSearch] = useState("");
 
-  const openCreateModal = () => {
-    setEditingSubject(null);
-    setName("");
+  const { data, isLoading, isError } = useExtracurriculars();
+  const createMutation = useCreateExtracurricular();
+  const updateMutation = useUpdateExtracurricular();
+  const deleteMutation = useDeleteExtracurricular();
+
+  const items = data ?? [];
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(search.toLowerCase().trim()),
+  );
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (excul) => {
-    setEditingSubject(excul);
-    setName(excul.name);
+  const openEdit = (extracurricular) => {
+    setEditing(extracurricular);
+    setForm({
+      name: extracurricular.name ?? "",
+      description: extracurricular.description ?? "",
+      is_active: extracurricular.is_active !== false,
+    });
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
+    setEditing(null);
+    setForm(emptyForm);
     setIsModalOpen(false);
-    setEditingSubject(null);
-    setName("");
+  };
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    const trimmedName = name.trim();
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      is_active: form.is_active,
+    };
 
-    if (!trimmedName) return;
+    if (!payload.name) return;
 
-    setItems((current) =>
-      editingSubject
-        ? current.map((item) =>
-            item.id === editingSubject.id
-              ? { ...item, name: trimmedName }
-              : item,
-          )
-        : [...current, { id: Date.now(), name: trimmedName }],
-    );
+    if (editing) {
+      updateMutation.mutate(
+        { id: editing.id, ...payload },
+        { onSuccess: closeModal },
+      );
+      return;
+    }
 
-    closeModal();
+    createMutation.mutate(payload, { onSuccess: closeModal });
   };
 
-  const handleDelete = (excul) => {
-    const confirmed = window.confirm(`Hapus ekstrakurikuler "${excul.name}"?`);
+  const handleDelete = () => {
+    if (!deleting) return;
 
-    if (!confirmed) return;
-
-    setItems((current) => current.filter((item) => item.id !== excul.id));
+    deleteMutation.mutate(deleting.id, {
+      onSuccess: () => setDeleting(null),
+    });
   };
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase().trim()),
-  );
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title="Ekstrakurikuler"
-          description="Kelola daftar ekskul yang tersedia"
+          description="Kelola daftar ekstrakurikuler yang tersedia."
         />
 
-        <Button icon={Plus} onClick={openCreateModal}>
+        <Button icon={Plus} onClick={openCreate}>
           Tambah ekskul
         </Button>
       </header>
@@ -87,26 +116,38 @@ const ExtracurricularsPage = () => {
         />
       </div>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredItems.map((excul) => (
-          <ExtracurricularCard
-            key={excul.id}
-            excul={excul}
-            onEdit={() => openEditModal(excul)}
-            onDelete={() => handleDelete(excul)}
-          />
-        ))}
-      </section>
+      {isLoading ? (
+        <p className="text-sm text-muted">Memuat ekstrakurikuler...</p>
+      ) : isError ? (
+        <p className="text-sm text-danger">Gagal memuat ekstrakurikuler.</p>
+      ) : (
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredItems.map((extracurricular) => (
+            <ExtracurricularCard
+              key={extracurricular.id}
+              excul={extracurricular}
+              onEdit={() => openEdit(extracurricular)}
+              onDelete={() => setDeleting(extracurricular)}
+            />
+          ))}
+
+          {!filteredItems.length && (
+            <p className="col-span-full py-10 text-center text-sm text-muted">
+              Ekstrakurikuler tidak ditemukan.
+            </p>
+          )}
+        </section>
+      )}
 
       <Modal
         open={isModalOpen}
         onClose={closeModal}
         title={
-          editingSubject ? "Edit Ekstrakurikuler" : "Tambah Ekstrakurikuler"
+          editing ? "Ubah Ekstrakurikuler" : "Tambah Ekstrakurikuler"
         }
         description={
-          editingSubject
-            ? "Ubah nama ekstrakurikuler."
+          editing
+            ? "Perbarui data ekstrakurikuler."
             : "Tambahkan ekstrakurikuler baru."
         }
         footer={
@@ -115,23 +156,76 @@ const ExtracurricularsPage = () => {
               Batal
             </Button>
             <Button
-              onClick={handleSubmit}
-              disabled={!name.trim()}
+              type="submit"
+              form="extracurricular-form"
+              isLoading={isSubmitting}
+              disabled={!form.name.trim() || isSubmitting}
             >
-              {editingSubject ? "Simpan perubahan" : "Tambah ekstrakurikuler"}
+              {editing ? "Simpan perubahan" : "Tambah ekstrakurikuler"}
             </Button>
           </>
         }
       >
-        <Input
-          label="Nama ekstrakurikuler"
-          id="extracurricularName"
-          name="extracurricularName"
-          placeholder="Contoh: Pramuka"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-        />
+        <form id="extracurricular-form" onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Nama ekstrakurikuler"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="Contoh: Pramuka"
+            required
+          />
+
+          <Textarea
+            label="Deskripsi"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="Deskripsi singkat ekstrakurikuler"
+          />
+
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={form.is_active}
+              onChange={handleChange}
+              className="size-4 accent-primary"
+            />
+            Aktif
+          </label>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(deleting)}
+        onClose={() => setDeleting(null)}
+        title="Hapus ekstrakurikuler"
+        description={
+          deleting
+            ? `Ekstrakurikuler "${deleting.name}" akan dihapus.`
+            : undefined
+        }
+        size="S"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={handleDelete}
+              isLoading={deleteMutation.isPending}
+            >
+              Hapus
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Tindakan ini tidak dapat dibatalkan.
+        </p>
       </Modal>
     </div>
   );
