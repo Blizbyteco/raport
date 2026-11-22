@@ -1,9 +1,22 @@
 import { useMutation } from "@tanstack/react-query";
-import { downloadClassroomReport } from "../api/teacherApi";
+import api from "@/shared/api/Axios";
 
 const useDownloadClassroomReport = () => {
   return useMutation({
-    mutationFn: downloadClassroomReport,
+    mutationFn: (variables) => {
+      const request =
+        variables && typeof variables === "object"
+          ? variables
+          : { classSubjectId: variables };
+
+      return api.get(
+        `/api/class-subjects/${request.classSubjectId}/report/pdf`,
+        {
+          responseType: "blob",
+          params: request.params,
+        },
+      );
+    },
 
     onSuccess: (response) => {
       const blob = new Blob([response.data], {

@@ -18,17 +18,14 @@ const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    console.log("1. LOGOUT CONTEXT DIPANGGIL");
     try {
-      console.log("2. SEBELUM LOGOUT API");
       await logoutApi();
-      console.log("3. LOGOUT API BERHASIL");
-    } catch (error) {
-      console.error("4. LOGOUT API ERROR", error);
-    } finally {
-      console.log("5. SET USER NULL");
+    } catch {
       setUser(null);
+      return;
     }
+
+    setUser(null);
   };
 
   const checkAuth = async () => {

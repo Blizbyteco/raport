@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ClipboardCheck, FileText } from "lucide-react";
 
@@ -5,17 +6,31 @@ import Button from "@/shared/ui/button/Button";
 import ClassBanner from "../ui/ClassBanner";
 import LearningCard from "../ui/LearningCard";
 import useDailyLessons from "../hooks/useDailyLessons";
+import useDeleteDailyLesson from "../hooks/useDeleteDailyLesson";
 import useDownloadClassroomReport from "../hooks/useDownloadClassroomReport";
 
 const ClassroomPage = () => {
   const navigate = useNavigate();
   const { classSubjectId } = useParams();
+  const [deletingLessonId, setDeletingLessonId] = useState(null);
 
   const { data, isLoading, isError } = useDailyLessons(classSubjectId);
   const downloadReport = useDownloadClassroomReport();
+  const deleteLesson = useDeleteDailyLesson();
 
   const meta = data?.meta ?? {};
   const histories = data?.data ?? [];
+
+  const handleDeleteLesson = (lesson) => {
+    if (!window.confirm(`Hapus pembelajaran "${lesson.material}"?`)) return;
+
+    setDeletingLessonId(lesson.id);
+
+    deleteLesson.mutate(
+      { classSubjectId, dailyLessonId: lesson.id },
+      { onSettled: () => setDeletingLessonId(null) },
+    );
+  };
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -80,6 +95,8 @@ const ClassroomPage = () => {
                     `/teacher/class/${classSubjectId}/progress/${history.id}`,
                   )
                 }
+                onDelete={() => handleDeleteLesson(history)}
+                isDeleting={deletingLessonId === history.id}
               />
             ))}
 

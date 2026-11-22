@@ -10,6 +10,9 @@ import StudentTable from "../ui/StudentTable";
 import PageHeader from "@/shared/layout/PageHeader";
 import useStudents from "../hooks/useStudents";
 import useDeleteStudent from "../hooks/useDeleteStudent";
+import { downloadCsv } from "@/shared/lib/csv";
+
+const CSV_HEADERS = ["nisn", "full_name", "gender", "parent_name"];
 
 const StudentsPage = () => {
   const navigate = useNavigate();
@@ -30,6 +33,15 @@ const StudentsPage = () => {
     });
   };
 
+  const handleExport = () => {
+    downloadCsv("siswa.csv", [
+      CSV_HEADERS,
+      ...students.map((student) =>
+        CSV_HEADERS.map((key) => student[key] ?? ""),
+      ),
+    ]);
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -38,7 +50,7 @@ const StudentsPage = () => {
           description="Kelola dan lihat data siswa yang terdaftar."
         />
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" icon={Download}>
+          <Button variant="outline" icon={Download} onClick={handleExport}>
             Ekspor data
           </Button>
           <Button

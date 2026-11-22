@@ -4,8 +4,8 @@ import { getTeachers } from "../api/teacherApi";
 
 const useTeachers = (search = "") => {
   return useQuery({
-    queryKey: ["teachers", search],
-    queryFn: () => getTeachers({ search }),
+    queryKey: ["teachers", "list", search],
+    queryFn: () => getTeachers({ search, per_page: 200 }),
   });
 };
 

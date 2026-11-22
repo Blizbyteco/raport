@@ -45,7 +45,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('academic-years', AcademicYearController::class);
 
     // Master Data
-    Route::apiResource('classes', SchoolClassController::class);
+    Route::apiResource('classes', SchoolClassController::class)->parameters([
+        'classes' => 'schoolClass',
+    ]);
     Route::apiResource('teachers', TeacherController::class);
     Route::apiResource('subjects', SubjectController::class);
     Route::apiResource('students', StudentController::class);

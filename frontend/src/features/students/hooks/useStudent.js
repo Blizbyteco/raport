@@ -4,7 +4,7 @@ import { getStudent } from "../api/studentApi";
 
 const useStudent = (id) => {
   return useQuery({
-    queryKey: ["students", id],
+    queryKey: ["students", "detail", id],
     queryFn: () => getStudent(id),
     enabled: Boolean(id),
   });

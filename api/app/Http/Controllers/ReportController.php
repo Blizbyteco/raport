@@ -5,18 +5,61 @@ namespace App\Http\Controllers;
 use App\Models\ClassSubject;
 use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
-    public function classroomReport(ClassSubject $classSubject)
+    public function classroomReport(Request $request, ClassSubject $classSubject)
     {
+        $validated = $request->validate([
+            'period' => ['sometimes', 'nullable', 'in:monthly,semester'],
+            'month' => [
+                'nullable',
+                'required_if:period,monthly',
+                'date_format:Y-m',
+            ],
+            'semester' => [
+                'nullable',
+                'required_if:period,semester',
+                'in:ganjil,genap',
+            ],
+        ]);
+
         $classSubject->load([
             'subject',
             'schoolClass',
             'academicYear',
             'teacher',
         ]);
+
+        $applyPeriodFilter = function ($query) use ($validated, $classSubject) {
+            $period = $validated['period'] ?? null;
+
+            if ($period === 'monthly') {
+                [$year, $month] = explode('-', $validated['month']);
+
+                $query
+                    ->whereYear('lesson_date', (int) $year)
+                    ->whereMonth('lesson_date', (int) $month);
+
+                return;
+            }
+
+            if ($period !== 'semester') {
+                return;
+            }
+
+            $academicYear = $classSubject->academicYear;
+            $isGanjil = $validated['semester'] === 'ganjil';
+            $year = (int) ($isGanjil
+                ? ($academicYear?->start_year ?? now()->year)
+                : ($academicYear?->end_year ?? now()->year + 1));
+
+            $query
+                ->whereYear('lesson_date', $year)
+                ->whereMonth('lesson_date', '>=', $isGanjil ? 7 : 1)
+                ->whereMonth('lesson_date', '<=', $isGanjil ? 12 : 6);
+        };
 
         $students = $classSubject->schoolClass
             ->classStudents()
@@ -27,10 +70,11 @@ class ReportController extends Controller
             ->where('status', 'AKTIF')
             ->with('student')
             ->get()
-            ->map(function ($classStudent) use ($classSubject) {
+            ->map(function ($classStudent) use ($classSubject, $applyPeriodFilter) {
 
                 $lessons = $classSubject
                     ->dailyLessons()
+                    ->where($applyPeriodFilter)
                     ->with([
                         'studentDailyProgress' => function ($query) use ($classStudent) {
                             $query->where(
@@ -56,7 +100,7 @@ class ReportController extends Controller
 
                 $scores = $progress
                     ->pluck('score')
-                    ->filter(fn($score) => $score !== null);
+                    ->filter(fn ($score) => $score !== null);
 
                 return [
                     'student' => $classStudent->student,
@@ -102,7 +146,7 @@ class ReportController extends Controller
             ->firstOrFail();
 
         $academicYear = $classStudent->academicYear;
-        $schoolClass  = $classStudent->schoolClass;
+        $schoolClass = $classStudent->schoolClass;
 
         $classSubjects = $schoolClass->classSubjects()
             ->where('academic_year_id', $academicYear->id)
@@ -118,47 +162,47 @@ class ReportController extends Controller
             ])
             ->get();
 
-        $subjects = $classSubjects->map(function ($classSubject) use ($student) {
+        $subjects = $classSubjects->map(function ($classSubject) {
             $progress = $classSubject->dailyLessons
-                ->map(fn($lesson) => $lesson->studentDailyProgress->first())
+                ->map(fn ($lesson) => $lesson->studentDailyProgress->first())
                 ->filter();
 
-            $scores  = $progress->pluck('score')->filter(fn($score) => $score !== null);
+            $scores = $progress->pluck('score')->filter(fn ($score) => $score !== null);
             $average = $scores->isNotEmpty() ? round($scores->avg()) : null;
 
             // Ambil beberapa catatan guru sebagai dasar capaian kompetensi.
             $notes = $progress->pluck('teacher_note')->filter()->unique()->values();
 
             return [
-                'name'           => $classSubject->subject->name,
-                'teacher'        => $classSubject->teacher?->full_name,
-                'final_score'    => $average,
-                'lesson_count'   => $classSubject->dailyLessons->count(),
+                'name' => $classSubject->subject->name,
+                'teacher' => $classSubject->teacher?->full_name,
+                'final_score' => $average,
+                'lesson_count' => $classSubject->dailyLessons->count(),
                 'assessed_count' => $scores->count(),
-                'notes'          => $notes,
-                'lessons'        => $classSubject->dailyLessons->map(function ($lesson) {
+                'notes' => $notes,
+                'lessons' => $classSubject->dailyLessons->map(function ($lesson) {
                     $progress = $lesson->studentDailyProgress->first();
 
                     return [
-                        'date'  => $lesson->lesson_date,
+                        'date' => $lesson->lesson_date,
                         'title' => $lesson->title,
                         'score' => $progress?->score,
-                        'note'  => $progress?->teacher_note,
+                        'note' => $progress?->teacher_note,
                     ];
                 }),
             ];
         });
 
         $pdf = Pdf::loadView('reports.student-report', [
-            'student'      => $student,
+            'student' => $student,
             'classStudent' => $classStudent,
             'academicYear' => $academicYear,
-            'schoolClass'  => $schoolClass,
-            'subjects'     => $subjects,
+            'schoolClass' => $schoolClass,
+            'subjects' => $subjects,
         ]);
 
         $pdf->setPaper('A4', 'portrait');
-        $filename = 'rapor-' . str($student->full_name)->slug() . '.pdf';
+        $filename = 'rapor-'.str($student->full_name)->slug().'.pdf';
 
         return $pdf->stream($filename);
     }

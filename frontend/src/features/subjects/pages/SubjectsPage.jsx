@@ -11,6 +11,7 @@ import PageHeader from "@/shared/layout/PageHeader";
 
 import SubjectCard from "../ui/SubjectCard";
 
+import useSubject from "../hooks/useSubject";
 import useSubjects from "../hooks/useSubjects";
 import useCreateSubject from "../hooks/useCreateSubject";
 import useUpdateSubject from "../hooks/useUpdateSubject";
@@ -27,7 +28,7 @@ const SubjectsPage = () => {
     handleSubmit,
     setError,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm({
     defaultValues: {
       name: "",
@@ -35,26 +36,25 @@ const SubjectsPage = () => {
   });
 
   const { data, isLoading, isError } = useSubjects(search);
+  const { data: subjectDetail } = useSubject(editingSubject?.id);
 
   const createMutation = useCreateSubject();
   const updateMutation = useUpdateSubject();
   const deleteMutation = useDeleteSubject();
 
   const subjects = data ?? [];
+  const canonicalSubject = subjectDetail?.data ?? subjectDetail;
+  const editingSource = canonicalSubject ?? editingSubject;
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   useEffect(() => {
-    if (editingSubject) {
-      reset({
-        name: editingSubject.name,
-      });
-    } else {
-      reset({
-        name: "",
-      });
+    if (editingSource && !isDirty) {
+      reset({ name: editingSource.name ?? "" });
+    } else if (!editingSource) {
+      reset({ name: "" });
     }
-  }, [editingSubject, reset]);
+  }, [editingSource, isDirty, reset]);
 
   const openCreateModal = () => {
     setEditingSubject(null);

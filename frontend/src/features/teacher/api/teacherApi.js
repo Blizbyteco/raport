@@ -27,17 +27,6 @@ export const getClassSubjectEvaluation = async (classSubjectId) => {
   return response.data;
 };
 
-export const downloadClassroomReport = async (classSubjectId) => {
-  const response = await api.get(
-    `/api/class-subjects/${classSubjectId}/report/pdf`,
-    {
-      responseType: "blob",
-    },
-  );
-
-  return response;
-};
-
 export const downloadStudentReport = async (studentId) => {
   const response = await api.get(`/api/students/${studentId}/report/pdf`, {
     responseType: "blob",

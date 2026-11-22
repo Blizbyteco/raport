@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { Menu, User, LogOut, Sun, Moon } from "lucide-react";
 import useAuth from "@/features/auth/hooks/useAuth";
 
 const Navbar = ({ onMobileMenuToggle }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
@@ -116,6 +118,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
                 {/* Profile */}
                 <button
                   type="button"
+                  onClick={() => navigate("/profile")}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-foreground/80 transition-colors hover:bg-primary/10 hover:text-primary"
                 >
                   <User className="size-4 shrink-0 text-primary" />
@@ -128,7 +131,8 @@ const Navbar = ({ onMobileMenuToggle }) => {
                 {/* Logout */}
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-500/10"
+                  onClick={logout}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-danger transition-colors hover:bg-danger/10"
                 >
                   <LogOut className="size-4 shrink-0" />
                   <span>Keluar</span>

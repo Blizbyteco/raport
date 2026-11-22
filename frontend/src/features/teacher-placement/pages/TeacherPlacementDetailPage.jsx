@@ -5,6 +5,7 @@ import {
   BookOpen,
   Check,
   GraduationCap,
+  Pencil,
   Plus,
   School,
   Search,
@@ -16,6 +17,7 @@ import {
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
+import Modal from "@/shared/ui/overlay/Modal";
 import Select from "@/shared/ui/form/Select";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
 import useClasses from "@/features/class/hooks/useClasses";
@@ -31,6 +33,7 @@ import {
   useDeleteClassSubject,
   useRemoveHomeroomTeacher,
   useSetHomeroomTeacher,
+  useUpdateClassSubject,
 } from "../hooks/useTeacherPlacementMutations";
 
 const TeacherPlacementDetailPage = () => {
@@ -42,6 +45,10 @@ const TeacherPlacementDetailPage = () => {
   const [subjectId, setSubjectId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [search, setSearch] = useState("");
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [editSubjectId, setEditSubjectId] = useState("");
+  const [editTeacherId, setEditTeacherId] = useState("");
+  const [assignmentToDelete, setAssignmentToDelete] = useState(null);
 
   const { data: classes } = useClasses();
   const { data: academicYear } = useActiveAcademicYear();
@@ -59,6 +66,7 @@ const TeacherPlacementDetailPage = () => {
   const setHomeroomMutation = useSetHomeroomTeacher();
   const removeHomeroomMutation = useRemoveHomeroomTeacher();
   const createAssignmentMutation = useCreateClassSubject();
+  const updateAssignmentMutation = useUpdateClassSubject();
   const deleteAssignmentMutation = useDeleteClassSubject();
 
   const classItem = (classes ?? []).find(
@@ -77,6 +85,12 @@ const TeacherPlacementDetailPage = () => {
 
   const availableSubjects = subjectList.filter(
     (subject) => !assignedSubjectIds.has(subject.id),
+  );
+
+  const editableSubjects = subjectList.filter(
+    (subject) =>
+      !assignedSubjectIds.has(subject.id) ||
+      String(subject.id) === String(editingAssignment?.subject_id),
   );
 
   const filteredAssignments = useMemo(() => {
@@ -139,8 +153,41 @@ const TeacherPlacementDetailPage = () => {
     );
   };
 
-  const handleDeleteAssignment = (classSubjectId) => {
-    deleteAssignmentMutation.mutate({ classId, classSubjectId });
+  const closeEditForm = () => {
+    setEditingAssignment(null);
+    setEditSubjectId("");
+    setEditTeacherId("");
+  };
+
+  const handleOpenEditForm = (assignment) => {
+    setEditingAssignment(assignment);
+    setEditSubjectId(String(assignment.subject_id ?? ""));
+    setEditTeacherId(String(assignment.teacher_id ?? ""));
+  };
+
+  const handleUpdateAssignment = () => {
+    if (!editingAssignment || !editSubjectId || !editTeacherId) return;
+
+    updateAssignmentMutation.mutate(
+      {
+        classId,
+        classSubjectId: editingAssignment.id,
+        data: {
+          subject_id: Number(editSubjectId),
+          teacher_id: Number(editTeacherId),
+        },
+      },
+      { onSuccess: closeEditForm },
+    );
+  };
+
+  const handleDeleteAssignment = () => {
+    if (!assignmentToDelete) return;
+
+    deleteAssignmentMutation.mutate(
+      { classId, classSubjectId: assignmentToDelete.id },
+      { onSuccess: () => setAssignmentToDelete(null) },
+    );
   };
 
   return (
@@ -400,17 +447,30 @@ const TeacherPlacementDetailPage = () => {
                   </div>
                 </div>
 
-                <Tooltip label="Hapus penugasan">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Trash2}
-                    iconOnly
-                    onClick={() => handleDeleteAssignment(assignment.id)}
-                    className="hover:text-danger"
-                    aria-label="Hapus penugasan"
-                  />
-                </Tooltip>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Tooltip label="Ubah data penugasan">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Pencil}
+                      iconOnly
+                      onClick={() => handleOpenEditForm(assignment)}
+                      aria-label="Ubah data penugasan"
+                    />
+                  </Tooltip>
+
+                  <Tooltip label="Hapus data penugasan">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => setAssignmentToDelete(assignment)}
+                      className="hover:text-danger"
+                      aria-label="Hapus data penugasan"
+                    />
+                  </Tooltip>
+                </div>
               </div>
             ))}
           </div>
@@ -436,6 +496,95 @@ const TeacherPlacementDetailPage = () => {
           </p>
         </div>
       </section>
+
+      <Modal
+        open={Boolean(editingAssignment)}
+        onClose={closeEditForm}
+        title="Ubah data penugasan"
+        description={
+          editingAssignment?.subject?.name
+            ? `${editingAssignment.subject.name} — Kelas ${classItem?.name ?? ""}`
+            : undefined
+        }
+        footer={
+          <>
+            <Button variant="outline" onClick={closeEditForm}>
+              Batal
+            </Button>
+            <Button
+              icon={Check}
+              onClick={handleUpdateAssignment}
+              disabled={!editSubjectId || !editTeacherId}
+              isLoading={updateAssignmentMutation.isPending}
+            >
+              Simpan Perubahan
+            </Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Select
+            label="Mata Pelajaran"
+            value={editSubjectId}
+            onChange={(event) => setEditSubjectId(event.target.value)}
+            required
+          >
+            <option value="">Pilih mata pelajaran</option>
+            {editableSubjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            label="Guru Pengampu"
+            value={editTeacherId}
+            onChange={(event) => setEditTeacherId(event.target.value)}
+            required
+          >
+            <option value="">Pilih guru</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.full_name} — {teacher.nip}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(assignmentToDelete)}
+        onClose={() => setAssignmentToDelete(null)}
+        title="Hapus data penugasan"
+        description={
+          assignmentToDelete
+            ? `${assignmentToDelete.subject?.name ?? "Mata pelajaran"} — ${
+                assignmentToDelete.teacher?.full_name ?? "Guru tidak ditemukan"
+              }`
+            : undefined
+        }
+        size="S"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setAssignmentToDelete(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={handleDeleteAssignment}
+              isLoading={deleteAssignmentMutation.isPending}
+            >
+              Hapus
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Penugasan ini akan dihapus dari Kelas {classItem?.name ?? ""}.
+        </p>
+      </Modal>
     </div>
   );
 };

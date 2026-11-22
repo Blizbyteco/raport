@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Search,
   TrendingUp,
+  UserRound,
   Users,
 } from "lucide-react";
 
@@ -16,12 +17,14 @@ import PageHeader from "@/shared/layout/PageHeader";
 import SummaryCard from "../ui/SummaryCard";
 import Table from "@/shared/ui/data-display/Table";
 import useHomeroomClasses from "../hooks/useHomeroomClasses";
+import useTeacherClassDetail from "../hooks/useTeacherClassDetail";
 import useTeacherClassProgress from "../hooks/useTeacherClassProgress";
-import useDownloadStudentReport from "../hooks/useDownloadStudeentReport";
+import useDownloadStudentReport from "../hooks/useDownloadStudentReport";
 
 const HomeroomMonitoringPage = () => {
   const { classId } = useParams();
   const [search, setSearch] = useState("");
+  const [downloadingStudentIds, setDownloadingStudentIds] = useState([]);
 
   const { data: homeroomData, isLoading: homeroomLoading } =
     useHomeroomClasses();
@@ -39,7 +42,22 @@ const HomeroomMonitoringPage = () => {
     isError,
   } = useTeacherClassProgress(selectedClassId);
 
+  const {
+    data: classDetailData,
+    isLoading: detailLoading,
+    isError: detailError,
+  } = useTeacherClassDetail(selectedClassId);
+
   const downloadReport = useDownloadStudentReport();
+
+  const handleDownload = (studentId) => {
+    setDownloadingStudentIds((ids) => [...new Set([...ids, studentId])]);
+
+    downloadReport.mutate(studentId, {
+      onSettled: () =>
+        setDownloadingStudentIds((ids) => ids.filter((id) => id !== studentId)),
+    });
+  };
 
   const progress = progressData?.data;
   const students = useMemo(() => {
@@ -53,8 +71,15 @@ const HomeroomMonitoringPage = () => {
     );
   }, [progress, search]);
 
-  const classInfo = progress?.class ?? selectedClass?.classroom ?? {};
-  const academicYear = progress?.academic_year ?? selectedClass?.academic_year;
+  const classDetail = classDetailData?.data;
+  const homeroomTeachers = classDetail?.homeroom_teachers ?? [];
+  const detailSubjects = classDetail?.subjects ?? [];
+  const classInfo =
+    classDetail ?? progress?.class ?? selectedClass?.classroom ?? {};
+  const academicYear =
+    classDetail?.academic_year ??
+    progress?.academic_year ??
+    selectedClass?.academic_year;
   const yearLabel = academicYear
     ? `${academicYear.start_year}/${academicYear.end_year}`
     : "-";
@@ -100,6 +125,72 @@ const HomeroomMonitoringPage = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        {detailLoading ? (
+          <p className="text-sm text-muted">Memuat konteks kelas...</p>
+        ) : detailError ? (
+          <p className="text-sm text-danger">Gagal memuat konteks kelas.</p>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <UserRound className="size-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  Wali Kelas
+                </h3>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {homeroomTeachers.length ? (
+                  homeroomTeachers.map((teacher) => (
+                    <span
+                      key={teacher.id}
+                      className="rounded-full bg-background px-3 py-1.5 text-sm text-foreground"
+                    >
+                      {teacher.full_name}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted">Belum ditetapkan</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="size-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  Mata Pelajaran
+                </h3>
+                <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-muted">
+                  {detailSubjects.length}
+                </span>
+              </div>
+
+              {detailSubjects.length ? (
+                <ul className="space-y-2">
+                  {detailSubjects.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="font-medium text-foreground">
+                        {item.subject?.name ?? "-"}
+                      </span>
+                      <span className="text-muted">
+                        {item.teacher?.full_name ?? "-"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted">Belum ada mata pelajaran.</p>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -199,9 +290,9 @@ const HomeroomMonitoringPage = () => {
                       variant="ghost"
                       size="S"
                       icon={FileText}
-                      isLoading={downloadReport.isPending}
-                      disabled={downloadReport.isPending}
-                      onClick={() => downloadReport.mutate(student.id)}
+                      isLoading={downloadingStudentIds.includes(student.id)}
+                      disabled={downloadingStudentIds.includes(student.id)}
+                      onClick={() => handleDownload(student.id)}
                     >
                       Cetak
                     </Button>

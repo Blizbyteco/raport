@@ -112,10 +112,12 @@ const StudentDetailPage = () => {
     );
   }
 
-  const placements = student.classStudents ?? [];
+  const activePlacements = (student.classStudents ?? []).filter(
+    (placement) => placement.status === "AKTIF",
+  );
   const currentPlacement =
-    placements.find((placement) => placement.academicYear?.is_active) ??
-    placements[0];
+    activePlacements.find((placement) => placement.academicYear?.is_active) ??
+    activePlacements[0];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">

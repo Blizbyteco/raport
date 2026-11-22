@@ -198,7 +198,7 @@ const AcademicYearForm = ({
           variant="primary"
           size="M"
           icon={Save}
-          loading={isSubmitting}
+          isLoading={isSubmitting}
         >
           {submitLabel}
         </Button>

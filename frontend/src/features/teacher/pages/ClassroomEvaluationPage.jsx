@@ -6,23 +6,27 @@ import Button from "@/shared/ui/button/Button";
 import Select from "@/shared/ui/form/Select";
 import PageHeader from "@/shared/layout/PageHeader";
 import Table from "@/shared/ui/data-display/Table";
+import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useClassSubjectEvaluation from "../hooks/useClassSubjectEvaluation";
 import useDownloadClassroomReport from "../hooks/useDownloadClassroomReport";
 
-const monthKeys = [
-  "2026-07",
-  "2026-08",
-  "2026-09",
-  "2026-10",
-  "2026-11",
-  "2026-12",
-  "2027-01",
-  "2027-02",
-  "2027-03",
-  "2027-04",
-  "2027-05",
-  "2027-06",
-];
+const buildMonthKeys = (academicYear) => {
+  const startYear = Number(academicYear?.start_year);
+  const endYear = Number(academicYear?.end_year);
+
+  if (!Number.isInteger(startYear) || !Number.isInteger(endYear)) return [];
+
+  return [
+    ...Array.from(
+      { length: 6 },
+      (_, index) => `${startYear}-${String(index + 7).padStart(2, "0")}`,
+    ),
+    ...Array.from(
+      { length: 6 },
+      (_, index) => `${endYear}-${String(index + 1).padStart(2, "0")}`,
+    ),
+  ];
+};
 
 const getMonthKey = (date) => (date ? date.slice(0, 7) : "");
 
@@ -57,12 +61,16 @@ const ClassroomEvaluationPage = () => {
   const { classSubjectId } = useParams();
 
   const [period, setPeriod] = useState("monthly");
-  const [month, setMonth] = useState(monthKeys[0]);
+  const [month, setMonth] = useState("");
   const [semester, setSemester] = useState("ganjil");
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
+  const { data: activeYear } = useActiveAcademicYear();
   const { data, isLoading, isError } = useClassSubjectEvaluation(classSubjectId);
   const downloadReport = useDownloadClassroomReport();
+
+  const monthKeys = useMemo(() => buildMonthKeys(activeYear), [activeYear]);
+  const activeMonth = month && monthKeys.includes(month) ? month : (monthKeys[0] ?? "");
 
   const classroom = data?.data?.classroom ?? {};
   const allLessons = data?.data?.lessons ?? [];
@@ -71,14 +79,14 @@ const ClassroomEvaluationPage = () => {
   const semesterMonths = useMemo(
     () =>
       semester === "ganjil" ? monthKeys.slice(0, 6) : monthKeys.slice(6),
-    [semester],
+    [monthKeys, semester],
   );
 
   const activeLessons = useMemo(() => {
-    const keys = period === "monthly" ? [month] : semesterMonths;
+    const keys = period === "monthly" ? [activeMonth] : semesterMonths;
 
     return allLessons.filter((lesson) => keys.includes(getMonthKey(lesson.date)));
-  }, [allLessons, period, month, semesterMonths]);
+  }, [allLessons, period, activeMonth, semesterMonths]);
 
   const scoresFor = (student, lessons) =>
     lessons
@@ -120,12 +128,16 @@ const ClassroomEvaluationPage = () => {
             {period === "monthly" ? (
               <Select
                 label="Bulan"
-                value={month}
+                value={activeMonth}
+                disabled={!monthKeys.length}
                 onChange={(event) => {
                   setMonth(event.target.value);
                   setSelectedStudentId(null);
                 }}
               >
+                {!monthKeys.length && (
+                  <option value="">Memuat tahun akademik...</option>
+                )}
                 {monthKeys.map((monthKey) => (
                   <option key={monthKey} value={monthKey}>
                     {getMonthName(monthKey)}
@@ -150,7 +162,16 @@ const ClassroomEvaluationPage = () => {
           <Button
             icon={FileDown}
             isLoading={downloadReport.isPending}
-            onClick={() => downloadReport.mutate(classSubjectId)}
+            disabled={period === "monthly" && !activeMonth}
+            onClick={() =>
+              downloadReport.mutate({
+                classSubjectId,
+                params:
+                  period === "monthly"
+                    ? { period, month: activeMonth }
+                    : { period, semester },
+              })
+            }
           >
             Cetak Laporan
           </Button>
@@ -257,6 +278,9 @@ const ClassroomEvaluationPage = () => {
                   {selectedStudent.name}
                 </h2>
                 <p className="mt-1 text-sm text-muted">NISN {selectedStudent.nis}</p>
+                <p className="mt-2 text-sm text-muted">
+                  Catatan: {selectedStudent.notes || "-"}
+                </p>
               </div>
 
               <Table>
@@ -266,7 +290,6 @@ const ClassroomEvaluationPage = () => {
                     <Table.Head>Tanggal</Table.Head>
                     <Table.Head>Materi</Table.Head>
                     <Table.Head className="text-center">Nilai</Table.Head>
-                    <Table.Head>Catatan Guru</Table.Head>
                   </Table.Row>
                 </Table.Header>
 
@@ -290,16 +313,16 @@ const ClassroomEvaluationPage = () => {
                         <Table.Cell className="text-center font-semibold">
                           {selectedStudent.scores?.[globalIndex] ?? "-"}
                         </Table.Cell>
-                        <Table.Cell className="text-sm text-muted">
-                          {selectedStudent.notes || "-"}
-                        </Table.Cell>
                       </Table.Row>
                     );
                   })}
 
                   {!activeLessons.length && (
                     <Table.Row>
-                      <Table.Cell colSpan={5} className="py-10 text-center">
+                      <Table.Cell
+                        colSpan={4}
+                        className="py-10 text-center"
+                      >
                         Tidak ada pembelajaran pada periode ini.
                       </Table.Cell>
                     </Table.Row>

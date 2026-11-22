@@ -166,7 +166,7 @@ const Routers = () => {
         </Route>
 
         {/* Common */}
-        <Route element={<ProtectedRoute roles={["admin", "teacher"]} />}>
+        <Route element={<ProtectedRoute roles={["admin", "teacher", "leader"]} />}>
           <Route element={<MainLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
           </Route>

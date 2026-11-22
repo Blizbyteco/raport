@@ -21,22 +21,26 @@ import PageHeader from "@/shared/layout/PageHeader";
 import Button from "@/shared/ui/button/Button";
 import Select from "@/shared/ui/form/Select";
 import Table from "@/shared/ui/data-display/Table";
+import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useClassSubjectEvaluation from "../hooks/useClassSubjectEvaluation";
 
-const monthKeys = [
-  "2026-07",
-  "2026-08",
-  "2026-09",
-  "2026-10",
-  "2026-11",
-  "2026-12",
-  "2027-01",
-  "2027-02",
-  "2027-03",
-  "2027-04",
-  "2027-05",
-  "2027-06",
-];
+const buildMonthKeys = (academicYear) => {
+  const startYear = Number(academicYear?.start_year);
+  const endYear = Number(academicYear?.end_year);
+
+  if (!Number.isInteger(startYear) || !Number.isInteger(endYear)) return [];
+
+  return [
+    ...Array.from(
+      { length: 6 },
+      (_, index) => `${startYear}-${String(index + 7).padStart(2, "0")}`,
+    ),
+    ...Array.from(
+      { length: 6 },
+      (_, index) => `${endYear}-${String(index + 1).padStart(2, "0")}`,
+    ),
+  ];
+};
 
 const getMonthKey = (date) => (date ? date.slice(0, 7) : "");
 
@@ -64,10 +68,14 @@ const StudentProgressDetailPage = () => {
   const { classSubjectId, studentId } = useParams();
 
   const [period, setPeriod] = useState("monthly");
-  const [month, setMonth] = useState(monthKeys[0]);
+  const [month, setMonth] = useState("");
   const [semester, setSemester] = useState("ganjil");
 
+  const { data: activeYear } = useActiveAcademicYear();
   const { data, isLoading, isError } = useClassSubjectEvaluation(classSubjectId);
+
+  const monthKeys = useMemo(() => buildMonthKeys(activeYear), [activeYear]);
+  const activeMonth = month && monthKeys.includes(month) ? month : (monthKeys[0] ?? "");
 
   const classroom = data?.data?.classroom ?? {};
   const allLessons = data?.data?.lessons ?? [];
@@ -79,14 +87,14 @@ const StudentProgressDetailPage = () => {
   const semesterMonths = useMemo(
     () =>
       semester === "ganjil" ? monthKeys.slice(0, 6) : monthKeys.slice(6),
-    [semester],
+    [monthKeys, semester],
   );
 
   const activeLessons = useMemo(() => {
-    const keys = period === "monthly" ? [month] : semesterMonths;
+    const keys = period === "monthly" ? [activeMonth] : semesterMonths;
 
     return allLessons.filter((lesson) => keys.includes(getMonthKey(lesson.date)));
-  }, [allLessons, period, month, semesterMonths]);
+  }, [allLessons, period, activeMonth, semesterMonths]);
 
   if (isLoading) {
     return <p className="text-sm text-muted">Memuat detail siswa...</p>;
@@ -168,6 +176,9 @@ const StudentProgressDetailPage = () => {
           <p className="mt-1 text-sm text-muted">
             {classroom.class} · {classroom.subject} · {classroom.academicYear}
           </p>
+          <p className="mt-1 text-sm text-muted">
+            Catatan: {student.notes || "-"}
+          </p>
         </div>
       </section>
 
@@ -185,9 +196,13 @@ const StudentProgressDetailPage = () => {
           {period === "monthly" ? (
             <Select
               label="Bulan"
-              value={month}
+              value={activeMonth}
+              disabled={!monthKeys.length}
               onChange={(event) => setMonth(event.target.value)}
             >
+              {!monthKeys.length && (
+                <option value="">Memuat tahun akademik...</option>
+              )}
               {monthKeys.map((monthKey) => (
                 <option key={monthKey} value={monthKey}>
                   {getMonthName(monthKey)}
@@ -291,7 +306,6 @@ const StudentProgressDetailPage = () => {
               <Table.Head>Tanggal</Table.Head>
               <Table.Head>Materi Pembelajaran</Table.Head>
               <Table.Head className="text-center">Nilai</Table.Head>
-              <Table.Head>Catatan Guru</Table.Head>
             </Table.Row>
           </Table.Header>
 
@@ -308,15 +322,15 @@ const StudentProgressDetailPage = () => {
                   </span>
                 </Table.Cell>
                 <Table.Cell className="text-center">{item.score ?? "-"}</Table.Cell>
-                <Table.Cell className="text-sm text-muted">
-                  {student.notes || "-"}
-                </Table.Cell>
               </Table.Row>
             ))}
 
             {!history.length && (
               <Table.Row>
-                <Table.Cell colSpan={5} className="py-8 text-center">
+                <Table.Cell
+                  colSpan={4}
+                  className="py-8 text-center"
+                >
                   Belum ada riwayat pembelajaran pada periode ini.
                 </Table.Cell>
               </Table.Row>

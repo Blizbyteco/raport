@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import {
   BadgeCheck,
   BriefcaseBusiness,
-  Camera,
   KeyRound,
   LockKeyhole,
   Save,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 
 import useAuth from "@/features/auth/hooks/useAuth";
+import useProfile from "@/features/profiles/hooks/useProfile";
 import {
   useUpdatePassword,
   useUpdateProfile,
@@ -49,9 +49,16 @@ const getErrorMessage = (error) => {
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const { data: profileData } = useProfile();
   const [activeTab, setActiveTab] = useState("profile");
   const [feedback, setFeedback] = useState(null);
-  const [profile, setProfile] = useState(user);
+  const [updatedProfile, setUpdatedProfile] = useState(null);
+
+  const profile = {
+    ...(user ?? {}),
+    ...(profileData ?? {}),
+    ...(updatedProfile ?? {}),
+  };
 
   const updateProfileMutation = useUpdateProfile();
   const updatePasswordMutation = useUpdatePassword();
@@ -86,9 +93,10 @@ const ProfilePage = () => {
   const newPassword = watch("password");
 
   useEffect(() => {
-    setProfile(user);
-    reset({ full_name: user?.full_name ?? "" });
-  }, [user, reset]);
+    if (profileData?.full_name && !isDirty) {
+      reset({ full_name: profileData.full_name });
+    }
+  }, [profileData, isDirty, reset]);
 
   const setValidationErrors = (error, setFieldError) => {
     const validationErrors = error?.response?.data?.errors;
@@ -111,7 +119,10 @@ const ProfilePage = () => {
         onSuccess: (response) => {
           const updated = response?.data ?? response;
 
-          setProfile((previous) => ({ ...(previous ?? {}), ...updated }));
+          setUpdatedProfile((previous) => ({
+            ...(previous ?? {}),
+            ...updated,
+          }));
           reset({ full_name: updated?.full_name ?? values.full_name });
           setFeedback({
             type: "success",
@@ -164,15 +175,8 @@ const ProfilePage = () => {
         <div className="px-5 pb-5 sm:px-7">
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
-              <div className="relative flex size-20 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary text-2xl font-bold text-white sm:size-24">
+              <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary text-2xl font-bold text-white sm:size-24">
                 {getInitials(profile?.full_name ?? user?.full_name) || "?"}
-                <button
-                  type="button"
-                  aria-label="Ubah foto profil"
-                  className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border-2 border-card bg-background text-foreground shadow-sm transition hover:bg-muted/20"
-                >
-                  <Camera size={15} />
-                </button>
               </div>
 
               <div className="min-w-0 pb-1">
@@ -188,7 +192,7 @@ const ProfilePage = () => {
             <div className="flex flex-wrap items-center gap-2 sm:pb-1">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
                 <BriefcaseBusiness size={14} />
-                {roleLabel[profile?.role ?? user?.role] ?? "Pengguna"}
+                {roleLabel[user?.role] ?? "Pengguna"}
               </span>
             </div>
           </div>
@@ -287,7 +291,7 @@ const ProfilePage = () => {
 
                   <Input
                     label="Role"
-                    value={roleLabel[profile?.role ?? user?.role] ?? "Pengguna"}
+                    value={roleLabel[user?.role] ?? "Pengguna"}
                     readOnly
                     disabled
                   />

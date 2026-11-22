@@ -16,7 +16,11 @@ const RootRedirect = () => {
     return <Navigate to="/teacher" replace />;
   }
 
-  return <Navigate to="/dashboard" replace />;
+  if (user.role === "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Navigate to="/profile" replace />;
 };
 
 export default RootRedirect;

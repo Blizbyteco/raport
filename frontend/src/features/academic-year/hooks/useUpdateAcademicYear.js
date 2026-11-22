@@ -6,7 +6,7 @@ const useUpdateAcademicYear = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateAcademicYear,
+    mutationFn: ({ id, data }) => updateAcademicYear(id, data),
 
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

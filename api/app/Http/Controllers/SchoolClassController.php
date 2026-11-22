@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use Illuminate\Http\Request;
 
@@ -9,6 +10,8 @@ class SchoolClassController extends Controller
 {
     public function index(Request $request)
     {
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+
         $classes = SchoolClass::query()
             ->with([
                 'homeroomTeachers' => function ($query) {
@@ -16,8 +19,11 @@ class SchoolClassController extends Controller
                 },
             ])
             ->withCount([
-                'classStudents as students_count' => fn ($query) => $query->where('status', 'AKTIF'),
-                'classSubjects as subjects_count',
+                'classStudents as students_count' => fn ($query) => $query
+                    ->where('status', 'AKTIF')
+                    ->when($activeYearId, fn ($q) => $q->where('academic_year_id', $activeYearId)),
+                'classSubjects as subjects_count' => fn ($query) => $query
+                    ->when($activeYearId, fn ($q) => $q->where('academic_year_id', $activeYearId)),
             ])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
@@ -35,7 +41,7 @@ class SchoolClassController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
-            'grade_level' => ['required', 'integer', 'between:10,12'],
+            'grade_level' => ['required', 'integer', 'between:7,12'],
         ]);
 
         $schoolClass = SchoolClass::create($validated);
@@ -45,6 +51,8 @@ class SchoolClassController extends Controller
 
     public function show(SchoolClass $schoolClass)
     {
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+
         $schoolClass->load([
             'classStudents.student',
             'classSubjects.subject',
@@ -53,8 +61,11 @@ class SchoolClassController extends Controller
         ]);
 
         $schoolClass->loadCount([
-            'classStudents as students_count' => fn ($query) => $query->where('status', 'AKTIF'),
-            'classSubjects as subjects_count',
+            'classStudents as students_count' => fn ($query) => $query
+                ->where('status', 'AKTIF')
+                ->when($activeYearId, fn ($q) => $q->where('academic_year_id', $activeYearId)),
+            'classSubjects as subjects_count' => fn ($query) => $query
+                ->when($activeYearId, fn ($q) => $q->where('academic_year_id', $activeYearId)),
         ]);
 
         return response()->json($schoolClass);
@@ -66,7 +77,7 @@ class SchoolClassController extends Controller
     ) {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
-            'grade_level' => ['required', 'integer', 'between:10,12'],
+            'grade_level' => ['required', 'integer', 'between:7,12'],
         ]);
 
         $schoolClass->update($validated);

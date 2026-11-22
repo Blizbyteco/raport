@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router";
 
@@ -19,6 +19,7 @@ const LearningProgressUpdatePage = () => {
   const { classSubjectId, dailyLessonId } = useParams();
 
   const navigate = useNavigate();
+  const [savingStudentIds, setSavingStudentIds] = useState([]);
 
   const {
     register,
@@ -63,12 +64,20 @@ const LearningProgressUpdatePage = () => {
   };
 
   const handleUpdateProgress = (studentId, data) => {
-    updateProgressMutation.mutate({
-      dailyLessonId,
-      studentId,
-      score: Number(data.score),
-      teacher_note: data.teacher_note || null,
-    });
+    setSavingStudentIds((ids) => [...new Set([...ids, studentId])]);
+
+    updateProgressMutation.mutate(
+      {
+        dailyLessonId,
+        studentId,
+        score: Number(data.score),
+        teacher_note: data.teacher_note || null,
+      },
+      {
+        onSettled: () =>
+          setSavingStudentIds((ids) => ids.filter((id) => id !== studentId)),
+      },
+    );
   };
 
   if (isLessonLoading || isProgressLoading) {
@@ -129,7 +138,7 @@ const LearningProgressUpdatePage = () => {
                 variant="primary"
                 size="M"
                 icon={Save}
-                loading={updateLessonMutation.isPending}
+                isLoading={updateLessonMutation.isPending}
                 disabled={updateLessonMutation.isPending}
               >
                 Simpan Perubahan
@@ -154,7 +163,7 @@ const LearningProgressUpdatePage = () => {
               key={item.id}
               item={item}
               onSubmit={handleUpdateProgress}
-              isPending={updateProgressMutation.isPending}
+              isPending={savingStudentIds.includes(item.student_id)}
             />
           ))}
         </div>
@@ -234,7 +243,7 @@ const StudentProgressForm = ({ item, onSubmit, isPending }) => {
           type="submit"
           variant="outline"
           size="M"
-          loading={isPending}
+          isLoading={isPending}
           disabled={isPending}
         >
           Simpan

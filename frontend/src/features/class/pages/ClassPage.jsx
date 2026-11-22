@@ -7,47 +7,83 @@ import Modal from "@/shared/ui/overlay/Modal";
 import PageHeader from "@/shared/layout/PageHeader";
 
 import ClassCard from "../ui/ClassCard";
+import useClass from "../hooks/useClass";
 import useClasses from "../hooks/useClasses";
 import useCreateClass from "../hooks/useCreateClass";
 import useUpdateClass from "../hooks/useUpdateClass";
 import useDeleteClass from "../hooks/useDeleteClass";
 
+const romanGradeLevels = {
+  X: 10,
+  XI: 11,
+  XII: 12,
+};
+
+const parseGradeLevel = (value) => {
+  const normalized = String(value ?? "").trim().toUpperCase();
+
+  const romanGradeLevel = romanGradeLevels[normalized];
+
+  if (typeof romanGradeLevel === "number") {
+    return romanGradeLevel;
+  }
+
+  if (!/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const level = Number(normalized);
+
+  return level >= 7 && level <= 12 ? level : null;
+};
+
 const ClassPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
-  const [className, setClassName] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("");
+  const [formOverrides, setFormOverrides] = useState(null);
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError } = useClasses(search);
+  const { data: classDetail } = useClass(editingClass?.id);
 
   const createMutation = useCreateClass();
   const updateMutation = useUpdateClass();
   const deleteMutation = useDeleteClass();
 
   const classes = data ?? [];
+  const canonicalClass = classDetail?.data ?? classDetail;
+  const editSource = canonicalClass ?? editingClass;
+  const className = formOverrides?.name ?? editSource?.name ?? "";
+  const gradeLevel = String(
+    formOverrides?.grade_level ?? editSource?.grade_level ?? "",
+  );
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const gradeLevelInput = String(gradeLevel ?? "").trim();
+  const parsedGradeLevel = parseGradeLevel(gradeLevelInput);
+  const gradeLevelError =
+    gradeLevelInput !== "" && parsedGradeLevel === null
+      ? "Tingkat harus 7-12 atau X, XI, XII."
+      : undefined;
+  const isSubmitDisabled =
+    isSubmitting || !className.trim() || parsedGradeLevel === null;
 
   const openCreateModal = () => {
     setEditingClass(null);
-    setClassName("");
-    setGradeLevel("");
+    setFormOverrides(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (classItem) => {
     setEditingClass(classItem);
-    setClassName(classItem.name);
-    setGradeLevel(classItem.grade_level ?? "");
+    setFormOverrides(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingClass(null);
-    setClassName("");
-    setGradeLevel("");
+    setFormOverrides(null);
     createMutation.reset();
     updateMutation.reset();
   };
@@ -56,9 +92,8 @@ const ClassPage = () => {
     event.preventDefault();
 
     const name = className.trim();
-    const level = gradeLevel.trim();
 
-    if (!name || !level) {
+    if (!name || parsedGradeLevel === null) {
       return;
     }
 
@@ -67,7 +102,7 @@ const ClassPage = () => {
         {
           id: editingClass.id,
           name,
-          grade_level: level,
+          grade_level: parsedGradeLevel,
         },
         {
           onSuccess: closeModal,
@@ -80,7 +115,7 @@ const ClassPage = () => {
     createMutation.mutate(
       {
         name,
-        grade_level: level,
+        grade_level: parsedGradeLevel,
       },
       {
         onSuccess: closeModal,
@@ -130,7 +165,7 @@ const ClassPage = () => {
         </div>
       ) : isError ? (
         <div className="rounded-xl border border-border bg-card px-6 py-14 text-center">
-          <p className="text-sm text-destructive">Gagal memuat data kelas.</p>
+          <p className="text-sm text-danger">Gagal memuat data kelas.</p>
         </div>
       ) : classes.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -178,7 +213,7 @@ const ClassPage = () => {
 
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !className.trim() || !gradeLevel.trim()}
+              disabled={isSubmitDisabled}
             >
               {isSubmitting
                 ? "Menyimpan..."
@@ -196,7 +231,12 @@ const ClassPage = () => {
             name="className"
             placeholder="Contoh: X IPA 1"
             value={className}
-            onChange={(event) => setClassName(event.target.value)}
+            onChange={(event) =>
+              setFormOverrides((current) => ({
+                ...(current ?? {}),
+                name: event.target.value,
+              }))
+            }
             required
           />
 
@@ -206,13 +246,19 @@ const ClassPage = () => {
             name="gradeLevel"
             placeholder="Contoh: X, XI, XII, 7, 8"
             value={gradeLevel}
-            onChange={(event) => setGradeLevel(event.target.value)}
+            onChange={(event) =>
+              setFormOverrides((current) => ({
+                ...(current ?? {}),
+                grade_level: event.target.value,
+              }))
+            }
+            error={gradeLevelError}
             required
           />
         </div>
 
         {(createMutation.isError || updateMutation.isError) && (
-          <p className="mt-2 text-sm text-destructive">
+          <p className="mt-2 text-sm text-danger">
             {createMutation.error?.response?.data?.message ||
               updateMutation.error?.response?.data?.message ||
               "Gagal menyimpan kelas."}

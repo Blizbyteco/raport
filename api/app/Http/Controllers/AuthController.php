@@ -24,7 +24,7 @@ class AuthController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'failed' => ['Username atau password salah.'],
             ]);
@@ -55,6 +55,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => [
                 'id' => $user->id,
+                'nip' => $user->nip,
                 'username' => $user->username,
                 'full_name' => $user->full_name,
                 'role' => $user->role,

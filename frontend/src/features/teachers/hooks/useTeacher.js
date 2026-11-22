@@ -4,7 +4,7 @@ import { getTeacher } from "../api/teacherApi";
 
 const useTeacher = (id) => {
   return useQuery({
-    queryKey: ["teachers", id],
+    queryKey: ["teachers", "detail", id],
     queryFn: () => getTeacher(id),
     enabled: Boolean(id),
   });

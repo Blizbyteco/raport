@@ -177,7 +177,7 @@ Mengelola data kelas.
 GET /api/classes
 ```
 
-Mengambil seluruh kelas.
+Mengambil seluruh kelas. `students_count` dan `subjects_count` dihitung hanya untuk tahun ajaran aktif.
 
 ---
 
@@ -187,7 +187,7 @@ Mengambil seluruh kelas.
 GET /api/classes/{schoolClass}
 ```
 
-Mengambil detail kelas beserta relasi siswa, mata pelajaran, guru, dan wali kelas.
+Mengambil detail kelas beserta relasi siswa, mata pelajaran, guru, dan wali kelas. `students_count` dan `subjects_count` dihitung hanya untuk tahun ajaran aktif.
 
 ---
 
@@ -211,7 +211,7 @@ POST /api/classes
 | Field         | Type    | Required | Description          |
 | ------------- | ------- | -------- | -------------------- |
 | `name`        | string  | Yes      | Nama kelas           |
-| `grade_level` | integer | Yes      | Tingkat kelas, 10–12 |
+| `grade_level` | integer | Yes      | Tingkat kelas, 7–12  |
 
 ---
 
@@ -1283,6 +1283,7 @@ Alias dari `GET /api/user`.
 {
     "user": {
         "id": 8,
+        "nip": "198001012023011001",
         "username": "guru.ahmad",
         "full_name": "Ahmad Fauzan",
         "role": "teacher"
@@ -1860,3 +1861,13 @@ Semua endpoint berada di dalam middleware `auth:sanctum` dengan autentikasi cook
 | ------ | --------------------------------------------- | ------------------ |
 | GET    | `/api/class-subjects/{classSubject}/report/pdf`| PDF laporan kelas  |
 | GET    | `/api/students/{student}/report/pdf`          | PDF laporan siswa  |
+
+Filter periode pada PDF laporan kelas (opsional):
+
+| Parameter  | Wajib                     | Nilai                  | Keterangan                                      |
+| ---------- | ------------------------- | ---------------------- | ----------------------------------------------- |
+| `period`   | Tidak                     | `monthly`, `semester`  | Menentukan jenis filter periode.                |
+| `month`    | Ya jika `period=monthly`  | `YYYY-MM`              | Bulan pembelajaran yang dicantumkan.            |
+| `semester` | Ya jika `period=semester` | `ganjil`, `genap`      | Semester pada tahun ajaran class subject.       |
+
+Tanpa parameter tersebut, seluruh pembelajaran tetap dicantumkan (perilaku lama). Contoh: `GET /api/class-subjects/{classSubject}/report/pdf?period=monthly&month=2025-08`.

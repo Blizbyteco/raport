@@ -187,7 +187,7 @@ const LearningProgressCreatePage = () => {
             variant="primary"
             size="M"
             icon={Save}
-            loading={createMutation.isPending}
+            isLoading={createMutation.isPending}
             disabled={
               isLoading || students.length === 0 || createMutation.isPending
             }

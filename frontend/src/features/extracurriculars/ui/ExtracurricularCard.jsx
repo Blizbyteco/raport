@@ -1,8 +1,8 @@
 import Button from "@/shared/ui/button/Button";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
-import { Pencil, SportShoe, Trash2 } from "lucide-react";
+import { Pencil, SportShoe, Trash2, Users } from "lucide-react";
 
-const ExtracurricularCard = ({ excul, onEdit, onDelete }) => {
+const ExtracurricularCard = ({ excul, onEdit, onDelete, onManage }) => {
   return (
     <div className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 transition-all duration-200 hover:ring-1 ring-primary">
       <div className="flex min-w-0 items-start gap-3">
@@ -25,27 +25,39 @@ const ExtracurricularCard = ({ excul, onEdit, onDelete }) => {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <Tooltip label="Ubah data ekstrakurikuler">
-          <Button
-            variant="ghost"
-            size="S"
-            icon={Pencil}
-            iconOnly
-            onClick={onEdit}
-            aria-label={`Ubah data ${excul.name}`}
-          />
-        </Tooltip>
-        <Tooltip label="Hapus data ekstrakurikuler">
-          <Button
-            variant="ghost"
-            size="S"
-            icon={Trash2}
-            iconOnly
-            onClick={onDelete}
-            aria-label={`Hapus data ${excul.name}`}
-          />
-        </Tooltip>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button
+          variant="outline"
+          size="S"
+          icon={Users}
+          onClick={onManage}
+          aria-label={`Atur anggota ${excul.name}`}
+        >
+          Atur anggota
+        </Button>
+
+        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Tooltip label="Ubah data ekstrakurikuler">
+            <Button
+              variant="ghost"
+              size="S"
+              icon={Pencil}
+              iconOnly
+              onClick={onEdit}
+              aria-label={`Ubah data ${excul.name}`}
+            />
+          </Tooltip>
+          <Tooltip label="Hapus data ekstrakurikuler">
+            <Button
+              variant="ghost"
+              size="S"
+              icon={Trash2}
+              iconOnly
+              onClick={onDelete}
+              aria-label={`Hapus data ${excul.name}`}
+            />
+          </Tooltip>
+        </div>
       </div>
     </div>
   );

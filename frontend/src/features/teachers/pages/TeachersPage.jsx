@@ -10,6 +10,9 @@ import PageHeader from "@/shared/layout/PageHeader";
 import TeacherTable from "../ui/TeacherTable";
 import useTeachers from "../hooks/useTeachers";
 import useDeleteTeacher from "../hooks/useDeleteTeacher";
+import { downloadCsv } from "@/shared/lib/csv";
+
+const CSV_HEADERS = ["nip", "username", "full_name"];
 
 const TeachersPage = () => {
   const navigate = useNavigate();
@@ -30,6 +33,15 @@ const TeachersPage = () => {
     });
   };
 
+  const handleExport = () => {
+    downloadCsv("guru.csv", [
+      CSV_HEADERS,
+      ...teachers.map((teacher) =>
+        CSV_HEADERS.map((key) => teacher[key] ?? ""),
+      ),
+    ]);
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -39,7 +51,7 @@ const TeachersPage = () => {
         />
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" icon={Download}>
+          <Button variant="outline" icon={Download} onClick={handleExport}>
             Ekspor data
           </Button>
           <Button

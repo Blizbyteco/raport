@@ -8,6 +8,8 @@ import Modal from "@/shared/ui/overlay/Modal";
 import PageHeader from "@/shared/layout/PageHeader";
 
 import ExtracurricularCard from "../ui/ExtracurricularCard";
+import ExtracurricularMembersModal from "../ui/ExtracurricularMembersModal";
+import useExtracurricular from "../hooks/useExtracurricular";
 import useExtracurriculars from "../hooks/useExtracurriculars";
 import useCreateExtracurricular from "../hooks/useCreateExtracurricular";
 import useUpdateExtracurricular from "../hooks/useUpdateExtracurricular";
@@ -17,12 +19,14 @@ const emptyForm = { name: "", description: "", is_active: true };
 
 const ExtracurricularsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [formOverrides, setFormOverrides] = useState(null);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [managing, setManaging] = useState(null);
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError } = useExtracurriculars();
+  const { data: extracurricularDetail } = useExtracurricular(editing?.id);
   const createMutation = useCreateExtracurricular();
   const updateMutation = useUpdateExtracurricular();
   const deleteMutation = useDeleteExtracurricular();
@@ -32,32 +36,37 @@ const ExtracurricularsPage = () => {
     item.name.toLowerCase().includes(search.toLowerCase().trim()),
   );
 
+  const canonicalExtracurricular =
+    extracurricularDetail?.data ?? extracurricularDetail;
+  const formSource = editing ? canonicalExtracurricular ?? editing : emptyForm;
+  const form = {
+    name: formOverrides?.name ?? formSource?.name ?? "",
+    description: formOverrides?.description ?? formSource?.description ?? "",
+    is_active: formOverrides?.is_active ?? (formSource?.is_active !== false),
+  };
+
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setFormOverrides(null);
     setIsModalOpen(true);
   };
 
   const openEdit = (extracurricular) => {
     setEditing(extracurricular);
-    setForm({
-      name: extracurricular.name ?? "",
-      description: extracurricular.description ?? "",
-      is_active: extracurricular.is_active !== false,
-    });
+    setFormOverrides(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setFormOverrides(null);
     setIsModalOpen(false);
   };
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setForm((current) => ({
-      ...current,
+    setFormOverrides((current) => ({
+      ...(current ?? {}),
       [name]: type === "checkbox" ? checked : value,
     }));
   };
@@ -128,6 +137,7 @@ const ExtracurricularsPage = () => {
               excul={extracurricular}
               onEdit={() => openEdit(extracurricular)}
               onDelete={() => setDeleting(extracurricular)}
+              onManage={() => setManaging(extracurricular)}
             />
           ))}
 
@@ -227,6 +237,13 @@ const ExtracurricularsPage = () => {
           Tindakan ini tidak dapat dibatalkan.
         </p>
       </Modal>
+
+      {managing && (
+        <ExtracurricularMembersModal
+          extracurricular={managing}
+          onClose={() => setManaging(null)}
+        />
+      )}
     </div>
   );
 };

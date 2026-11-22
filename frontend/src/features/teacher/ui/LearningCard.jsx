@@ -1,6 +1,9 @@
 import { formatDate } from "@/shared/lib/formatDate";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router";
+
+import Button from "@/shared/ui/button/Button";
+import Tooltip from "@/shared/ui/feedback/Tooltip";
 
 const LearningCard = ({
   id,
@@ -10,6 +13,8 @@ const LearningCard = ({
   assessed,
   totalStudents,
   onClick,
+  onDelete,
+  isDeleting = false,
 }) => {
   const navigate = useNavigate();
 
@@ -53,7 +58,28 @@ const LearningCard = ({
             </p>
           </div>
 
-          <ChevronRight className="h-5 w-5 text-muted" />
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <Tooltip label="Hapus data pembelajaran">
+                <Button
+                  variant="ghost"
+                  size="S"
+                  icon={Trash2}
+                  iconOnly
+                  isLoading={isDeleting}
+                  disabled={isDeleting}
+                  aria-label={`Hapus data pembelajaran ${material ?? ""}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete();
+                  }}
+                  onKeyDown={(event) => event.stopPropagation()}
+                />
+              </Tooltip>
+            )}
+
+            <ChevronRight className="h-5 w-5 text-muted" />
+          </div>
         </div>
       </div>
     </div>

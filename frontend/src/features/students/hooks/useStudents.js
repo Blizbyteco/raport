@@ -4,8 +4,8 @@ import { getStudents } from "../api/studentApi";
 
 const useStudents = (search = "") => {
   return useQuery({
-    queryKey: ["students", search],
-    queryFn: () => getStudents({ search }),
+    queryKey: ["students", "list", search],
+    queryFn: () => getStudents({ search, per_page: 200 }),
   });
 };
 

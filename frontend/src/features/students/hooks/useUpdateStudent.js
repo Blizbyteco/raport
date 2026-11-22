@@ -7,9 +7,8 @@ const useUpdateStudent = () => {
 
   return useMutation({
     mutationFn: updateStudent,
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
-      queryClient.invalidateQueries({ queryKey: ["students", variables.id] });
     },
   });
 };
