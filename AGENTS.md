@@ -147,9 +147,12 @@ npm run build
   - `POST /login` lives in `routes/web.php` (`AuthController@login`), logs in via the `web` guard and regenerates the session. There is **no** `/api/login` and **no** token issuance.
   - Everything in `routes/api.php` is wrapped in `auth:sanctum`.
   - Frontend must send `withCredentials: true` + `withXSRFToken: true` (already done in `frontend/src/shared/api/Axios.js`).
+  - `GET /api/user` and `GET /api/profile` return the same authenticated-user shape, including `nip`.
 - **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars) plus nested/manual routes for placements, lessons, progress, attendance, dashboard, profile and reports. The `classes` resource binds `{schoolClass}` explicitly so `SchoolClassController` receives the resolved model. See `routes/api.php` and `.docs/API.md`.
   - Class `students_count` / `subjects_count` are scoped to the active academic year; `grade_level` accepts 7–12.
-  - Classroom PDF accepts optional `period=monthly|semester`, `month=YYYY-MM`, and `semester=ganjil|genap`; omitting them keeps the unfiltered report.
+  - `GET /api/students` and `GET /api/teachers` support `per_page` (default 20, max 200); the SPA sends `per_page=200` for admin lists and member pickers.
+  - Classroom PDF accepts optional `period=monthly|semester`, `month=YYYY-MM`, and `semester=ganjil|genap`; omitting them keeps the unfiltered report. `monthly` requires a concrete `YYYY-MM`.
+  - Evaluation `notes` is one string (last non-empty `teacher_note`), not a per-lesson object/array; the UI reads it directly.
 - **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`.
 - **Roles**: `users.role` enum = `teacher | admin | leader`. Seeds only create `teacher` users.
 - **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`). `UserSeeder` also creates an admin account: username `admin`, password `password`, role `admin`.
@@ -170,14 +173,16 @@ npm run build
 - **Theme tokens live in `src/index.css`** (`@theme inline`): use `bg-background`, `bg-card`, `text-foreground`, `bg-primary`, `text-muted`, `text-danger`, `bg-success`, etc. Never use arbitrary colors like `bg-[#123456]`.
 - Data fetching pattern: `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
   - API-wired features: `academic-year`, `class`, `subjects`, `teacher`, `students`, `teachers`, `extracurriculars`, `student-placement`, `teacher-placement`, `attendance`, `dashboard`, `profiles`, and teacher module hooks.
+  - Two-way audit is green: every backend endpoint has a real frontend consumer, and every frontend API call maps to a backend route. Detail endpoints are used by the existing edit modals (`/profile`, classes, subjects, extracurriculars); `GET /teacher/classes/{schoolClass}` feeds homeroom monitoring.
   - Legacy mock stores (`features/students/ui/studentList.js`, `features/teachers/ui/teacherList.js`) and JSON files in `src/shared/data/` are unused; do not reintroduce them for new work.
-  - Admin CSV import/export uses `src/shared/lib/csv.js` (no XLSX dependency); templates and current filtered rows are downloaded client-side.
+  - Admin CSV import/export uses `src/shared/lib/csv.js` (no XLSX dependency); templates and current filtered rows are downloaded client-side. Import creates records sequentially through the resource endpoints (no bulk backend endpoint).
   - Extracurricular member assignment UI lives in `features/extracurriculars` and uses the nested teacher/student endpoints for the active academic year.
   - Admin `students`/`teachers` detail/edit routes are ID-based (`/dashboard/students/:id`, `/dashboard/teachers/:id`). Fields are locked until "Ubah data" is clicked; delete confirmation is available in the table and detail page.
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). `leader` falls back to `/profile`; no `/dashboard` loop. Login at `/login`.
   - Teacher class routes are keyed by `classSubjectId`: `/teacher/class/:classSubjectId`, `/progress/create`, `/progress/:dailyLessonId`, `/evaluation`, `/evaluation/:studentId`, `/attendance`, `/attendance/new`, `/attendance/:attendanceId/edit`, `/attendance/history`, `/attendance/history/:attendanceId`.
   - Homeroom monitoring: `/teacher/class/monitoring/:classId` (with `/teacher/class/monitoring` selecting the first class).
+  - Monthly classroom PDF download is disabled until `activeMonth` is a concrete `YYYY-MM`; the unfiltered report remains available.
   - Teacher placement detail: `/dashboard/teacher-placement/:classId`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
 - Admin edit/delete actions (tables and cards) use the shared `Tooltip` for labels (`Ubah data ...`, `Hapus data ...`) instead of native `title` attributes.
@@ -198,6 +203,6 @@ Do not introduce new dependencies or a new design system unless explicitly reque
 - Do not touch `.kilo/` (agent worktree metadata).
 - Make changes in the correct app (`api/` vs `frontend/`); keep them independent.
 - When changing backend routes/controllers, update `api/.docs/API.md` if behavior/contract changes.
-- After backend changes run `php artisan test` (currently 4 passing tests, including `RoleFeatureSmokeTest`) and Pint; after frontend changes run `npm run lint` and `npm run build`.
+- After backend changes run `php artisan test` (currently 4 passing tests / 15 assertions, including `RoleFeatureSmokeTest`) and Pint; after frontend changes run `npm run lint` and `npm run build`.
 - Migrations must succeed on a **fresh** database (Docker runs `php artisan migrate --force` on every start). Don't create a table that another migration already creates without a `Schema::hasTable()` guard.
 - Never add secrets to the repo; keep credentials in `api/.env` / `frontend/.env`.
