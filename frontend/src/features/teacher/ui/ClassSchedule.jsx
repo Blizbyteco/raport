@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { Eye } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
@@ -57,7 +57,7 @@ const CLASS_SCHEDULE = [
   },
 ];
 
-const ClassSchedule = () => {
+const ClassSchedule = ({ onPrintReport, isPrintLoading = false }) => {
   const navigate = useNavigate();
   const { classSubjectId } = useParams();
 
@@ -67,10 +67,23 @@ const ClassSchedule = () => {
 
   return (
     <section className="space-y-4">
-      <PageHeader
-        title="Jadwal Kelas"
-        description="Jadwal pertemuan tiap mata pelajaran yang Anda ajar."
-      />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <PageHeader
+          title="Jadwal Kelas"
+          description="Jadwal pertemuan tiap mata pelajaran yang Anda ajar."
+        />
+
+        {onPrintReport && (
+          <Button
+            variant="outline"
+            icon={FileText}
+            isLoading={isPrintLoading}
+            onClick={onPrintReport}
+          >
+            Cetak Laporan
+          </Button>
+        )}
+      </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
