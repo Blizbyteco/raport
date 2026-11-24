@@ -21,6 +21,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 import Select from "@/shared/ui/form/Select";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
 import useClasses from "@/features/class/hooks/useClasses";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useTeachers from "@/features/teachers/hooks/useTeachers";
 import useSubjects from "@/features/subjects/hooks/useSubjects";
@@ -39,6 +40,7 @@ import {
 const TeacherPlacementDetailPage = () => {
   const navigate = useNavigate();
   const { classId } = useParams();
+  const { canManage } = usePermissions();
 
   const [homeroomTeacherId, setHomeroomTeacherId] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -268,17 +270,19 @@ const TeacherPlacementDetailPage = () => {
                   NIP. {homeroom.teacher.nip}
                 </p>
               </div>
-              <Tooltip label="Hapus wali kelas">
-                <Button
-                  variant="ghost"
-                  size="S"
-                  icon={Trash2}
-                  iconOnly
-                  onClick={handleRemoveHomeroom}
-                  isLoading={removeHomeroomMutation.isPending}
-                  aria-label="Hapus wali kelas"
-                />
-              </Tooltip>
+              {canManage && (
+                <Tooltip label="Hapus wali kelas">
+                  <Button
+                    variant="ghost"
+                    size="S"
+                    icon={Trash2}
+                    iconOnly
+                    onClick={handleRemoveHomeroom}
+                    isLoading={removeHomeroomMutation.isPending}
+                    aria-label="Hapus wali kelas"
+                  />
+                </Tooltip>
+              )}
             </div>
           ) : (
             <p className="mb-4 rounded-xl border border-dashed border-border bg-background p-4 text-sm text-muted">
@@ -286,33 +290,35 @@ const TeacherPlacementDetailPage = () => {
             </p>
           )}
 
-          <form
-            onSubmit={handleSetHomeroom}
-            className="flex flex-col gap-3 sm:flex-row"
-          >
-            <Select
-              value={homeroomTeacherId}
-              onChange={(event) => setHomeroomTeacherId(event.target.value)}
-              disabled={!academicYearId}
-              className="flex-1"
+          {canManage && (
+            <form
+              onSubmit={handleSetHomeroom}
+              className="flex flex-col gap-3 sm:flex-row"
             >
-              <option value="">Pilih guru wali kelas</option>
-              {teachers.map((teacher) => (
-                <option key={teacher.id} value={teacher.id}>
-                  {teacher.full_name} — {teacher.nip}
-                </option>
-              ))}
-            </Select>
+              <Select
+                value={homeroomTeacherId}
+                onChange={(event) => setHomeroomTeacherId(event.target.value)}
+                disabled={!academicYearId}
+                className="flex-1"
+              >
+                <option value="">Pilih guru wali kelas</option>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.full_name} — {teacher.nip}
+                  </option>
+                ))}
+              </Select>
 
-            <Button
-              type="submit"
-              icon={Check}
-              disabled={!homeroomTeacherId || !academicYearId}
-              isLoading={setHomeroomMutation.isPending}
-            >
-              Simpan Wali Kelas
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                icon={Check}
+                disabled={!homeroomTeacherId || !academicYearId}
+                isLoading={setHomeroomMutation.isPending}
+              >
+                Simpan Wali Kelas
+              </Button>
+            </form>
+          )}
         </div>
       </section>
 
@@ -332,16 +338,18 @@ const TeacherPlacementDetailPage = () => {
             </div>
           </div>
 
-          <Button
-            icon={Plus}
-            onClick={() => setShowAddForm((current) => !current)}
-            disabled={!availableSubjects.length || !academicYearId}
-          >
-            Tambah Penugasan
-          </Button>
+          {canManage && (
+            <Button
+              icon={Plus}
+              onClick={() => setShowAddForm((current) => !current)}
+              disabled={!availableSubjects.length || !academicYearId}
+            >
+              Tambah Penugasan
+            </Button>
+          )}
         </div>
 
-        {showAddForm && (
+        {canManage && showAddForm && (
           <form
             onSubmit={handleCreateAssignment}
             className="space-y-4 border-b border-border bg-background/50 p-5"
@@ -447,30 +455,32 @@ const TeacherPlacementDetailPage = () => {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1">
-                  <Tooltip label="Ubah data penugasan">
-                    <Button
-                      variant="ghost"
-                      size="S"
-                      icon={Pencil}
-                      iconOnly
-                      onClick={() => handleOpenEditForm(assignment)}
-                      aria-label="Ubah data penugasan"
-                    />
-                  </Tooltip>
+                {canManage && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Tooltip label="Ubah data penugasan">
+                      <Button
+                        variant="ghost"
+                        size="S"
+                        icon={Pencil}
+                        iconOnly
+                        onClick={() => handleOpenEditForm(assignment)}
+                        aria-label="Ubah data penugasan"
+                      />
+                    </Tooltip>
 
-                  <Tooltip label="Hapus data penugasan">
-                    <Button
-                      variant="ghost"
-                      size="S"
-                      icon={Trash2}
-                      iconOnly
-                      onClick={() => setAssignmentToDelete(assignment)}
-                      className="hover:text-danger"
-                      aria-label="Hapus data penugasan"
-                    />
-                  </Tooltip>
-                </div>
+                    <Tooltip label="Hapus data penugasan">
+                      <Button
+                        variant="ghost"
+                        size="S"
+                        icon={Trash2}
+                        iconOnly
+                        onClick={() => setAssignmentToDelete(assignment)}
+                        className="hover:text-danger"
+                        aria-label="Hapus data penugasan"
+                      />
+                    </Tooltip>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -485,7 +495,9 @@ const TeacherPlacementDetailPage = () => {
             <p className="mt-1 text-sm text-muted">
               {search
                 ? "Coba gunakan kata kunci lain."
-                : "Klik Tambah Penugasan untuk menambahkan guru mapel."}
+                : canManage
+                  ? "Klik Tambah Penugasan untuk menambahkan guru mapel."
+                  : "Belum ada penugasan guru pada kelas ini."}
             </p>
           </div>
         )}

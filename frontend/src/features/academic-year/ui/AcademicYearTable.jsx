@@ -5,10 +5,12 @@ import Button from "@/shared/ui/button/Button";
 import Badge from "@/shared/ui/data-display/Badge";
 import Table from "@/shared/ui/data-display/Table";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import { formatDate } from "@/shared/lib/formatDate";
 
 const AcademicYearTable = ({ data, isLoading, isError, onDelete, onActivate }) => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   if (isLoading) {
     return (
@@ -37,14 +39,14 @@ const AcademicYearTable = ({ data, isLoading, isError, onDelete, onActivate }) =
           <Table.Head>Ganjil</Table.Head>
           <Table.Head>Genap</Table.Head>
           <Table.Head>Status</Table.Head>
-          <Table.Head>Aksi</Table.Head>
+          {canManage && <Table.Head>Aksi</Table.Head>}
         </Table.Row>
       </Table.Header>
 
       <Table.Body>
         {data.length === 0 ? (
           <Table.Row>
-            <Table.Cell colSpan={6} className="text-center">
+            <Table.Cell colSpan={canManage ? 6 : 5} className="text-center">
               Belum ada data tahun ajaran.
             </Table.Cell>
           </Table.Row>
@@ -97,44 +99,46 @@ const AcademicYearTable = ({ data, isLoading, isError, onDelete, onActivate }) =
                 </Table.Cell>
 
                 {/* Aksi */}
-                <Table.Cell>
-                  <div className="flex items-center gap-1">
-                    {!academicYear.is_active && (
-                      <Tooltip label="Aktifkan tahun akademik">
+                {canManage && (
+                  <Table.Cell>
+                    <div className="flex items-center gap-1">
+                      {!academicYear.is_active && (
+                        <Tooltip label="Aktifkan tahun akademik">
+                          <Button
+                            variant="ghost"
+                            size="S"
+                            icon={CheckCircle2}
+                            iconOnly
+                            onClick={() => onActivate?.(academicYear)}
+                            aria-label={`Aktifkan tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                          />
+                        </Tooltip>
+                      )}
+
+                      <Tooltip label="Ubah data tahun akademik">
                         <Button
                           variant="ghost"
                           size="S"
-                          icon={CheckCircle2}
+                          icon={Pencil}
                           iconOnly
-                          onClick={() => onActivate?.(academicYear)}
-                          aria-label={`Aktifkan tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                          onClick={() => navigate(`${academicYear.id}/edit`)}
+                          aria-label={`Ubah data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
                         />
                       </Tooltip>
-                    )}
 
-                    <Tooltip label="Ubah data tahun akademik">
-                      <Button
-                        variant="ghost"
-                        size="S"
-                        icon={Pencil}
-                        iconOnly
-                        onClick={() => navigate(`${academicYear.id}/edit`)}
-                        aria-label={`Ubah data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
-                      />
-                    </Tooltip>
-
-                    <Tooltip label="Hapus data tahun akademik">
-                      <Button
-                        variant="ghost"
-                        size="S"
-                        icon={Trash2}
-                        iconOnly
-                        onClick={() => onDelete?.(academicYear)}
-                        aria-label={`Hapus data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
-                      />
-                    </Tooltip>
-                  </div>
-                </Table.Cell>
+                      <Tooltip label="Hapus data tahun akademik">
+                        <Button
+                          variant="ghost"
+                          size="S"
+                          icon={Trash2}
+                          iconOnly
+                          onClick={() => onDelete?.(academicYear)}
+                          aria-label={`Hapus data tahun akademik ${academicYear.start_year}/${academicYear.end_year}`}
+                        />
+                      </Tooltip>
+                    </div>
+                  </Table.Cell>
+                )}
               </Table.Row>
             );
           })

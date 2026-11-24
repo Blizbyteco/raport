@@ -7,6 +7,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 import PageHeader from "@/shared/layout/PageHeader";
 
 import ClassCard from "../ui/ClassCard";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import useClass from "../hooks/useClass";
 import useClasses from "../hooks/useClasses";
 import useCreateClass from "../hooks/useCreateClass";
@@ -38,6 +39,7 @@ const parseGradeLevel = (value) => {
 };
 
 const ClassPage = () => {
+  const { canManage } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [formOverrides, setFormOverrides] = useState(null);
@@ -141,9 +143,11 @@ const ClassPage = () => {
           description="Kelola daftar kelas dan jumlah siswa."
         />
 
-        <Button icon={Plus} onClick={openCreateModal}>
-          Tambah kelas
-        </Button>
+        {canManage && (
+          <Button icon={Plus} onClick={openCreateModal}>
+            Tambah kelas
+          </Button>
+        )}
       </header>
 
       <div className="flex items-center gap-3 whitespace-nowrap sm:justify-between">

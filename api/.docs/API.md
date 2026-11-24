@@ -1192,6 +1192,11 @@ Mengubah progress yang sudah ada; progress tidak ditemukan menghasilkan 404.
 | GET    | `/extracurriculars/{id}/students`           | List siswa ekskul           |
 | POST   | `/extracurriculars/{id}/students`           | Tambah siswa ekskul         |
 | DELETE | `/extracurriculars/{id}/students/{student}` | Hapus siswa ekskul          |
+| GET    | `/foundation-officials`                     | List pengurus yayasan       |
+| POST   | `/foundation-officials`                     | Tambah pengurus yayasan     |
+| GET    | `/foundation-officials/{id}`                | Detail pengurus yayasan     |
+| PUT    | `/foundation-officials/{id}`                | Edit pengurus yayasan       |
+| DELETE | `/foundation-officials/{id}`                | Hapus pengurus yayasan      |
 | GET    | `/class-subjects/{id}/lessons`              | Riwayat pembelajaran        |
 | POST   | `/class-subjects/{id}/lessons`              | Tambah pembelajaran         |
 | GET    | `/class-subjects/{id}/lessons/{lesson}`     | Detail pembelajaran         |
@@ -1655,6 +1660,78 @@ DELETE /api/attendances/{attendance}
 
 ---
 
+# 19. Foundation Officials
+
+Mengelola struktur pengurus yayasan (pembina, ketua, sekretaris, bendahara, anggota).
+
+## 19.1 Get Foundation Officials
+
+```http
+GET /api/foundation-officials
+```
+
+Diurutkan berdasarkan `sort_order` lalu `name`.
+
+## 19.2 Create Foundation Official
+
+```http
+POST /api/foundation-officials
+```
+
+### Payload
+
+```json
+{
+    "name": "Dr. H. Ach. Ubaidillah, S.T., M.T.",
+    "position": "Ketua Yayasan",
+    "period": "2025-2030",
+    "phone": "081300000001",
+    "email": "ketua@yayasan.test",
+    "sort_order": 1
+}
+```
+
+### Fields
+
+| Field        | Type    | Required | Description                          |
+| ------------ | ------- | -------- | ------------------------------------ |
+| `name`       | string  | Yes      | Nama lengkap pengurus; maks. 100     |
+| `position`   | string  | Yes      | Jabatan dalam struktur; maks. 100    |
+| `period`     | string  | No       | Periode jabatan; maks. 50            |
+| `phone`      | string  | No       | Nomor telepon; maks. 30              |
+| `email`      | string  | No       | Alamat email                         |
+| `sort_order` | integer | No       | Urutan tampil pada struktur yayasan  |
+
+## 19.3 Get Foundation Official
+
+```http
+GET /api/foundation-officials/{foundationOfficial}
+```
+
+## 19.4 Update Foundation Official
+
+```http
+PUT /api/foundation-officials/{foundationOfficial}
+```
+
+Payload dan aturan field sama dengan create.
+
+## 19.5 Delete Foundation Official
+
+```http
+DELETE /api/foundation-officials/{foundationOfficial}
+```
+
+### Response
+
+```json
+{
+    "message": "Pengurus yayasan berhasil dihapus."
+}
+```
+
+---
+
 # API Endpoint
 
 Base URL:
@@ -1662,6 +1739,8 @@ Base URL:
 `/api`
 
 Semua endpoint berada di dalam middleware `auth:sanctum` dengan autentikasi cookie session Sanctum SPA.
+
+> Akun dengan role `leader` (pimpinan yayasan) hanya memiliki akses baca: seluruh request `GET` diizinkan, sedangkan `POST`/`PUT`/`PATCH`/`DELETE` ditolak dengan `403` kecuali untuk profil sendiri dan logout.
 
 ---
 
@@ -1860,6 +1939,18 @@ Semua endpoint berada di dalam middleware `auth:sanctum` dengan autentikasi cook
 | GET    | `/api/attendances/{attendance}`                 | Detail absensi   |
 | PUT    | `/api/attendances/{attendance}`                 | Update absensi   |
 | DELETE | `/api/attendances/{attendance}`                 | Hapus absensi    |
+
+---
+
+## Foundation Officials
+
+| Method    | Endpoint                              | Fungsi                 |
+| --------- | ------------------------------------- | ---------------------- |
+| GET       | `/api/foundation-officials`           | Daftar pengurus yayasan |
+| POST      | `/api/foundation-officials`           | Tambah pengurus yayasan |
+| GET       | `/api/foundation-officials/{official}` | Detail pengurus yayasan |
+| PUT/PATCH | `/api/foundation-officials/{official}` | Update pengurus yayasan |
+| DELETE    | `/api/foundation-officials/{official}` | Hapus pengurus yayasan  |
 
 ---
 

@@ -8,6 +8,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 
 import StudentTable from "../ui/StudentTable";
 import PageHeader from "@/shared/layout/PageHeader";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import useStudents from "../hooks/useStudents";
 import useDeleteStudent from "../hooks/useDeleteStudent";
 import { downloadCsv } from "@/shared/lib/csv";
@@ -16,6 +17,7 @@ const CSV_HEADERS = ["nisn", "full_name", "gender", "parent_name"];
 
 const StudentsPage = () => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   const [search, setSearch] = useState("");
   const [studentToDelete, setStudentToDelete] = useState(null);
@@ -53,13 +55,15 @@ const StudentsPage = () => {
           <Button variant="outline" icon={Download} onClick={handleExport}>
             Ekspor data
           </Button>
-          <Button
-            onClick={() => navigate("create")}
-            variant="primary"
-            icon={Plus}
-          >
-            Tambah siswa
-          </Button>
+          {canManage && (
+            <Button
+              onClick={() => navigate("create")}
+              variant="primary"
+              icon={Plus}
+            >
+              Tambah siswa
+            </Button>
+          )}
         </div>
       </header>
 

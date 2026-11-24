@@ -37,6 +37,7 @@ import ProfilePage from "@/features/profiles/pages/ProfilePage";
 import CreateAcademicYearPage from "@/features/academic-year/pages/CreateAcademicYearPage";
 import AcademicYearsPage from "@/features/academic-year/pages/AcademicYearsPage";
 import EditAcademicYearPage from "@/features/academic-year/pages/EditAcademicYearPage";
+import FoundationStructurePage from "@/features/foundation/pages/FoundationStructurePage";
 
 const Routers = () => {
   return (
@@ -46,32 +47,39 @@ const Routers = () => {
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Admin */}
-        <Route element={<ProtectedRoute roles={["admin"]} />}>
+        {/* Admin & head of foundation (read-only) */}
+        <Route element={<ProtectedRoute roles={["admin", "leader"]} />}>
           <Route element={<MainLayout />}>
             <Route path="dashboard">
               <Route index element={<DashboardPage />} />
               <Route path="academic-year" element={<AcademicYearsPage />} />
-              <Route
-                path="academic-year/create"
-                element={<CreateAcademicYearPage />}
-              />
-              <Route
-                path="academic-year/:id/edit"
-                element={<EditAcademicYearPage />}
-              />
+
+              <Route element={<ProtectedRoute roles={["admin"]} />}>
+                <Route
+                  path="academic-year/create"
+                  element={<CreateAcademicYearPage />}
+                />
+                <Route
+                  path="academic-year/:id/edit"
+                  element={<EditAcademicYearPage />}
+                />
+              </Route>
 
               <Route path="students">
                 <Route index element={<StudentsPage />} />
-                <Route path="create" element={<CreateStudentPage />} />
-                <Route path="import" element={<ImportStudentsPage />} />
+                <Route element={<ProtectedRoute roles={["admin"]} />}>
+                  <Route path="create" element={<CreateStudentPage />} />
+                  <Route path="import" element={<ImportStudentsPage />} />
+                </Route>
                 <Route path=":id" element={<StudentDetailPage />} />
               </Route>
 
               <Route path="teachers">
                 <Route index element={<TeachersPage />} />
-                <Route path="create" element={<CreateTeacherPage />} />
-                <Route path="import" element={<ImportTeachersPage />} />
+                <Route element={<ProtectedRoute roles={["admin"]} />}>
+                  <Route path="create" element={<CreateTeacherPage />} />
+                  <Route path="import" element={<ImportTeachersPage />} />
+                </Route>
                 <Route path=":id" element={<TeacherDetailPage />} />
               </Route>
 
@@ -87,16 +95,22 @@ const Routers = () => {
                 <Route index element={<ExtracurricularsPage />} />
               </Route>
 
+              <Route path="foundation">
+                <Route index element={<FoundationStructurePage />} />
+              </Route>
+
               <Route path="student-placement">
                 <Route index element={<StudentPlacementPage />} />
                 <Route
                   path=":classId"
                   element={<StudentPlacementDetailPage />}
                 />
-                <Route
-                  path=":classId/add"
-                  element={<StudentPlacementAddPage />}
-                />
+                <Route element={<ProtectedRoute roles={["admin"]} />}>
+                  <Route
+                    path=":classId/add"
+                    element={<StudentPlacementAddPage />}
+                  />
+                </Route>
               </Route>
 
               <Route

@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExtracurricularController;
 use App\Http\Controllers\ExtracurricularStudentController;
 use App\Http\Controllers\ExtracurricularTeacherController;
+use App\Http\Controllers\FoundationOfficialController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolClassController;
@@ -18,9 +19,10 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentDailyProgressController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Middleware\EnsureLeaderReadOnly;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', EnsureLeaderReadOnly::class])->group(function () {
 
     // Auth
     Route::get('/user', [AuthController::class, 'user']);
@@ -52,6 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('subjects', SubjectController::class);
     Route::apiResource('students', StudentController::class);
     Route::apiResource('extracurriculars', ExtracurricularController::class);
+
+    // Foundation (Yayasan)
+    Route::apiResource('foundation-officials', FoundationOfficialController::class)
+        ->parameters([
+            'foundation-officials' => 'foundationOfficial',
+        ]);
 
     // Class Students
     Route::get('/classes/{schoolClass}/students', [ClassStudentController::class, 'index']);

@@ -10,6 +10,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 import useTeacher from "../hooks/useTeacher";
 import useUpdateTeacher from "../hooks/useUpdateTeacher";
 import useDeleteTeacher from "../hooks/useDeleteTeacher";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 const getInitials = (name = "") =>
   name
@@ -27,6 +28,7 @@ const TeacherDetailPage = () => {
   const { data, isLoading, isError } = useTeacher(id);
   const updateMutation = useUpdateTeacher();
   const deleteMutation = useDeleteTeacher();
+  const { canManage } = usePermissions();
 
   const teacher = data?.data;
 
@@ -151,40 +153,45 @@ const TeacherDetailPage = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {editing ? (
-                <>
-                  <Button type="button" variant="outline" onClick={handleCancel}>
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    icon={Save}
-                    isLoading={updateMutation.isPending}
-                  >
-                    Simpan
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    icon={Pencil}
-                    onClick={() => setEditing(true)}
-                  >
-                    Ubah data
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    icon={Trash2}
-                    onClick={() => setDeleteOpen(true)}
-                  >
-                    Hapus data
-                  </Button>
-                </>
-              )}
+              {canManage &&
+                (editing ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancel}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      icon={Save}
+                      isLoading={updateMutation.isPending}
+                    >
+                      Simpan
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      icon={Pencil}
+                      onClick={() => setEditing(true)}
+                    >
+                      Ubah data
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      icon={Trash2}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      Hapus data
+                    </Button>
+                  </>
+                ))}
             </div>
           </div>
 

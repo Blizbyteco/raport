@@ -9,6 +9,7 @@ import PageHeader from "@/shared/layout/PageHeader";
 
 import ExtracurricularCard from "../ui/ExtracurricularCard";
 import ExtracurricularMembersModal from "../ui/ExtracurricularMembersModal";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useExtracurricular from "../hooks/useExtracurricular";
 import useExtracurriculars from "../hooks/useExtracurriculars";
@@ -19,6 +20,7 @@ import useDeleteExtracurricular from "../hooks/useDeleteExtracurricular";
 const emptyForm = { name: "", description: "", is_active: true };
 
 const ExtracurricularsPage = () => {
+  const { canManage } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formOverrides, setFormOverrides] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -113,9 +115,11 @@ const ExtracurricularsPage = () => {
           description="Kelola daftar ekstrakurikuler yang tersedia."
         />
 
-        <Button icon={Plus} onClick={openCreate}>
-          Tambah ekskul
-        </Button>
+        {canManage && (
+          <Button icon={Plus} onClick={openCreate}>
+            Tambah ekskul
+          </Button>
+        )}
       </header>
 
       <div className="w-full sm:max-w-sm">

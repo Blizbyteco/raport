@@ -16,7 +16,7 @@ const RootRedirect = () => {
     return <Navigate to="/teacher" replace />;
   }
 
-  if (user.role === "admin") {
+  if (user.role === "admin" || user.role === "leader") {
     return <Navigate to="/dashboard" replace />;
   }
 

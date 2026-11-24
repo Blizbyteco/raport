@@ -21,7 +21,7 @@ import Alert from "@/shared/ui/feedback/Alert";
 const roleLabel = {
   admin: "Administrator",
   teacher: "Guru",
-  leader: "Pimpinan",
+  leader: "Kepala Yayasan",
 };
 
 const QuickActionCard = ({ to, icon: Icon, title, description }) => (

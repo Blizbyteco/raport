@@ -5,9 +5,11 @@ import Button from "@/shared/ui/button/Button";
 import Badge from "@/shared/ui/data-display/Badge";
 import Table from "@/shared/ui/data-display/Table";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 const TeacherTable = ({ teachers, onDelete }) => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   return (
     <Table>
@@ -17,7 +19,7 @@ const TeacherTable = ({ teachers, onDelete }) => {
           <Table.Head>NIP</Table.Head>
           <Table.Head>Username</Table.Head>
           <Table.Head>Status</Table.Head>
-          <Table.Head>Aksi</Table.Head>
+          {canManage && <Table.Head>Aksi</Table.Head>}
         </Table.Row>
       </Table.Header>
 
@@ -39,36 +41,41 @@ const TeacherTable = ({ teachers, onDelete }) => {
                 {teacher.is_active ? "Aktif" : "Tidak aktif"}
               </Badge>
             </Table.Cell>
-            <Table.Cell>
-              <div className="flex items-center gap-2">
-                <Tooltip label="Ubah data guru">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Pencil}
-                    iconOnly
-                    onClick={() => navigate(String(teacher.id))}
-                    aria-label={`Ubah data ${teacher.full_name}`}
-                  />
-                </Tooltip>
-                <Tooltip label="Hapus data guru">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Trash2}
-                    iconOnly
-                    onClick={() => onDelete?.(teacher)}
-                    aria-label={`Hapus data ${teacher.full_name}`}
-                  />
-                </Tooltip>
-              </div>
-            </Table.Cell>
+            {canManage && (
+              <Table.Cell>
+                <div className="flex items-center gap-2">
+                  <Tooltip label="Ubah data guru">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Pencil}
+                      iconOnly
+                      onClick={() => navigate(String(teacher.id))}
+                      aria-label={`Ubah data ${teacher.full_name}`}
+                    />
+                  </Tooltip>
+                  <Tooltip label="Hapus data guru">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => onDelete?.(teacher)}
+                      aria-label={`Hapus data ${teacher.full_name}`}
+                    />
+                  </Tooltip>
+                </div>
+              </Table.Cell>
+            )}
           </Table.Row>
         ))}
 
         {!teachers.length && (
           <Table.Row>
-            <Table.Cell colSpan={5} className="py-14 text-center">
+            <Table.Cell
+              colSpan={canManage ? 5 : 4}
+              className="py-14 text-center"
+            >
               <p className="mt-3 font-semibold text-text-body">
                 Guru tidak ditemukan
               </p>

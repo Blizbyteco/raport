@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UserSeeder::class,
+            FoundationOfficialSeeder::class,
             StudentSeeder::class,
             AcademicYearSeeder::class,
             SchoolClassSeeder::class,

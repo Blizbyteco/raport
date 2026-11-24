@@ -23,7 +23,7 @@ import Input from "@/shared/ui/form/Input";
 const roleLabel = {
   admin: "Administrator",
   teacher: "Guru",
-  leader: "Pimpinan",
+  leader: "Kepala Yayasan",
 };
 
 const getInitials = (name = "") =>

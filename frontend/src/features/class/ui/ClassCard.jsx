@@ -1,8 +1,11 @@
 import Button from "@/shared/ui/button/Button";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
 import { Pencil, Trash2, Users } from "lucide-react";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 const ClassCard = ({ item, onEdit, onDelete }) => {
+  const { canManage } = usePermissions();
+
   return (
     <div className="group rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:ring-1 ring-primary">
       <div className="flex items-start justify-between gap-4">
@@ -16,28 +19,30 @@ const ClassCard = ({ item, onEdit, onDelete }) => {
           </h2>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <Tooltip label="Ubah data kelas">
-            <Button
-              variant="ghost"
-              size="S"
-              icon={Pencil}
-              iconOnly
-              onClick={onEdit}
-              aria-label={`Ubah data ${item.name}`}
-            />
-          </Tooltip>
-          <Tooltip label="Hapus data kelas">
-            <Button
-              variant="ghost"
-              size="S"
-              icon={Trash2}
-              iconOnly
-              onClick={onDelete}
-              aria-label={`Hapus data ${item.name}`}
-            />
-          </Tooltip>
-        </div>
+        {canManage && (
+          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <Tooltip label="Ubah data kelas">
+              <Button
+                variant="ghost"
+                size="S"
+                icon={Pencil}
+                iconOnly
+                onClick={onEdit}
+                aria-label={`Ubah data ${item.name}`}
+              />
+            </Tooltip>
+            <Tooltip label="Hapus data kelas">
+              <Button
+                variant="ghost"
+                size="S"
+                icon={Trash2}
+                iconOnly
+                onClick={onDelete}
+                aria-label={`Hapus data ${item.name}`}
+              />
+            </Tooltip>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-border pt-4">

@@ -6,6 +6,7 @@ import PageHeader from "@/shared/layout/PageHeader";
 
 import AcademicYearBanner from "../ui/AcademicYearBanner";
 import AcademicYearTable from "../ui/AcademicYearTable";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 import useAcademicYears from "../hooks/useAcademicYears";
 import useDeleteAcademicYear from "../hooks/useDeleteAcademicYear";
@@ -13,6 +14,7 @@ import useActivateAcademicYear from "../hooks/useActivateAcademicYear";
 
 const AcademicYearsPage = () => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   const { data, isLoading, isError } = useAcademicYears();
   const deleteMutation = useDeleteAcademicYear();
@@ -48,9 +50,11 @@ const AcademicYearsPage = () => {
           description="Kelola periode akademik yang digunakan dalam sistem."
         />
 
-        <Button icon={Plus} onClick={() => navigate("create")}>
-          Tambah Tahun
-        </Button>
+        {canManage && (
+          <Button icon={Plus} onClick={() => navigate("create")}>
+            Tambah Tahun
+          </Button>
+        )}
       </div>
 
       <AcademicYearBanner academicYears={academicYears} />

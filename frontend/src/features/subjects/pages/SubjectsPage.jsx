@@ -10,6 +10,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 import PageHeader from "@/shared/layout/PageHeader";
 
 import SubjectCard from "../ui/SubjectCard";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 import useSubject from "../hooks/useSubject";
 import useSubjects from "../hooks/useSubjects";
@@ -19,6 +20,7 @@ import useDeleteSubject from "../hooks/useDeleteSubject";
 import setFormErrors from "@/shared/lib/setFormErrors";
 
 const SubjectsPage = () => {
+  const { canManage } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
   const [search, setSearch] = useState("");
@@ -129,9 +131,11 @@ const SubjectsPage = () => {
           description="Kelola daftar mata pelajaran yang tersedia."
         />
 
-        <Button icon={Plus} onClick={openCreateModal}>
-          Tambah mapel
-        </Button>
+        {canManage && (
+          <Button icon={Plus} onClick={openCreateModal}>
+            Tambah mapel
+          </Button>
+        )}
       </header>
 
       <section className="flex items-center gap-3 whitespace-nowrap sm:justify-between">

@@ -34,7 +34,7 @@ const LoginPage = () => {
     try {
       const user = await login(data);
 
-      if (user.role === "admin") {
+      if (user.role === "admin" || user.role === "leader") {
         navigate("/dashboard", { replace: true });
         return;
       }

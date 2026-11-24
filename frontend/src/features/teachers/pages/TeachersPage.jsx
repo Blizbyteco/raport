@@ -8,6 +8,7 @@ import Modal from "@/shared/ui/overlay/Modal";
 import PageHeader from "@/shared/layout/PageHeader";
 
 import TeacherTable from "../ui/TeacherTable";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import useTeachers from "../hooks/useTeachers";
 import useDeleteTeacher from "../hooks/useDeleteTeacher";
 import { downloadCsv } from "@/shared/lib/csv";
@@ -16,6 +17,7 @@ const CSV_HEADERS = ["nip", "username", "full_name"];
 
 const TeachersPage = () => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   const [search, setSearch] = useState("");
   const [teacherToDelete, setTeacherToDelete] = useState(null);
@@ -54,13 +56,15 @@ const TeachersPage = () => {
           <Button variant="outline" icon={Download} onClick={handleExport}>
             Ekspor data
           </Button>
-          <Button
-            onClick={() => navigate("create")}
-            variant="primary"
-            icon={Plus}
-          >
-            Tambah guru
-          </Button>
+          {canManage && (
+            <Button
+              onClick={() => navigate("create")}
+              variant="primary"
+              icon={Plus}
+            >
+              Tambah guru
+            </Button>
+          )}
         </div>
       </header>
 

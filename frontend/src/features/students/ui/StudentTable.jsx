@@ -4,12 +4,14 @@ import { Link, useNavigate } from "react-router";
 import Button from "@/shared/ui/button/Button";
 import Table from "@/shared/ui/data-display/Table";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 
 const genderLabel = (gender) =>
   gender === "L" ? "Laki-laki" : gender === "P" ? "Perempuan" : "-";
 
 const StudentTable = ({ students, onDelete }) => {
   const navigate = useNavigate();
+  const { canManage } = usePermissions();
 
   return (
     <Table>
@@ -19,7 +21,7 @@ const StudentTable = ({ students, onDelete }) => {
           <Table.Head>NISN</Table.Head>
           <Table.Head>Jenis kelamin</Table.Head>
           <Table.Head>Wali</Table.Head>
-          <Table.Head>Aksi</Table.Head>
+          {canManage && <Table.Head>Aksi</Table.Head>}
         </Table.Row>
       </Table.Header>
 
@@ -37,36 +39,41 @@ const StudentTable = ({ students, onDelete }) => {
             <Table.Cell>{student.nisn}</Table.Cell>
             <Table.Cell>{genderLabel(student.gender)}</Table.Cell>
             <Table.Cell>{student.parent_name || "-"}</Table.Cell>
-            <Table.Cell>
-              <div className="flex items-center gap-2">
-                <Tooltip label="Ubah data siswa">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Pencil}
-                    iconOnly
-                    onClick={() => navigate(String(student.id))}
-                    aria-label={`Ubah data ${student.full_name}`}
-                  />
-                </Tooltip>
-                <Tooltip label="Hapus data siswa">
-                  <Button
-                    variant="ghost"
-                    size="S"
-                    icon={Trash2}
-                    iconOnly
-                    onClick={() => onDelete?.(student)}
-                    aria-label={`Hapus data ${student.full_name}`}
-                  />
-                </Tooltip>
-              </div>
-            </Table.Cell>
+            {canManage && (
+              <Table.Cell>
+                <div className="flex items-center gap-2">
+                  <Tooltip label="Ubah data siswa">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Pencil}
+                      iconOnly
+                      onClick={() => navigate(String(student.id))}
+                      aria-label={`Ubah data ${student.full_name}`}
+                    />
+                  </Tooltip>
+                  <Tooltip label="Hapus data siswa">
+                    <Button
+                      variant="ghost"
+                      size="S"
+                      icon={Trash2}
+                      iconOnly
+                      onClick={() => onDelete?.(student)}
+                      aria-label={`Hapus data ${student.full_name}`}
+                    />
+                  </Tooltip>
+                </div>
+              </Table.Cell>
+            )}
           </Table.Row>
         ))}
 
         {!students.length && (
           <Table.Row>
-            <Table.Cell colSpan={5} className="py-14 text-center">
+            <Table.Cell
+              colSpan={canManage ? 5 : 4}
+              className="py-14 text-center"
+            >
               <p className="mt-3 font-semibold text-text-body">
                 Siswa tidak ditemukan
               </p>

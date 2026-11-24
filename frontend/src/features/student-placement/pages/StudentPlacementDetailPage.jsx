@@ -10,6 +10,7 @@ import Tooltip from "@/shared/ui/feedback/Tooltip";
 import useClasses from "@/features/class/hooks/useClasses";
 import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useClassStudents from "../hooks/useClassStudents";
+import usePermissions from "@/features/auth/hooks/usePermissions";
 import { useRemoveStudentFromClass } from "../hooks/useStudentPlacementMutations";
 
 const genderLabel = (gender) =>
@@ -18,6 +19,7 @@ const genderLabel = (gender) =>
 const StudentPlacementDetailPage = () => {
   const navigate = useNavigate();
   const { classId } = useParams();
+  const { canManage } = usePermissions();
 
   const [search, setSearch] = useState("");
   const [studentToRemove, setStudentToRemove] = useState(null);
@@ -99,14 +101,16 @@ const StudentPlacementDetailPage = () => {
           </div>
         </div>
 
-        <Button
-          icon={UserPlus}
-          onClick={() =>
-            navigate(`/dashboard/student-placement/${classId}/add`)
-          }
-        >
-          Tambah siswa
-        </Button>
+        {canManage && (
+          <Button
+            icon={UserPlus}
+            onClick={() =>
+              navigate(`/dashboard/student-placement/${classId}/add`)
+            }
+          >
+            Tambah siswa
+          </Button>
+        )}
       </div>
 
       <div className="w-full sm:max-w-xs">
@@ -129,7 +133,7 @@ const StudentPlacementDetailPage = () => {
               <Table.Head>Siswa</Table.Head>
               <Table.Head>NISN</Table.Head>
               <Table.Head>Jenis kelamin</Table.Head>
-              <Table.Head>Aksi</Table.Head>
+              {canManage && <Table.Head>Aksi</Table.Head>}
             </Table.Row>
           </Table.Header>
 
@@ -141,25 +145,30 @@ const StudentPlacementDetailPage = () => {
                 </Table.Cell>
                 <Table.Cell>{student.nisn}</Table.Cell>
                 <Table.Cell>{genderLabel(student.gender)}</Table.Cell>
-                <Table.Cell>
-                  <Tooltip label="Keluarkan siswa dari kelas">
-                    <Button
-                      variant="ghost"
-                      size="S"
-                      icon={Trash2}
-                      iconOnly
-                      onClick={() => setStudentToRemove(student)}
-                      aria-label={`Keluarkan ${student.full_name}`}
-                      className="hover:text-danger"
-                    />
-                  </Tooltip>
-                </Table.Cell>
+                {canManage && (
+                  <Table.Cell>
+                    <Tooltip label="Keluarkan siswa dari kelas">
+                      <Button
+                        variant="ghost"
+                        size="S"
+                        icon={Trash2}
+                        iconOnly
+                        onClick={() => setStudentToRemove(student)}
+                        aria-label={`Keluarkan ${student.full_name}`}
+                        className="hover:text-danger"
+                      />
+                    </Tooltip>
+                  </Table.Cell>
+                )}
               </Table.Row>
             ))}
 
             {!students.length && (
               <Table.Row>
-                <Table.Cell colSpan={4} className="py-14 text-center">
+                <Table.Cell
+                  colSpan={canManage ? 4 : 3}
+                  className="py-14 text-center"
+                >
                   <p className="font-semibold text-foreground">
                     Siswa tidak ditemukan
                   </p>

@@ -115,5 +115,18 @@ class UserSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        User::updateOrCreate(
+            [
+                'username' => 'pimpinan',
+            ],
+            [
+                'nip' => '900000000000000099',
+                'password' => Hash::make('password'),
+                'full_name' => 'Pimpinan Yayasan',
+                'role' => 'leader',
+                'is_active' => true,
+            ]
+        );
     }
 }
