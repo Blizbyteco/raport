@@ -15,6 +15,8 @@ const STUDENTS = [
   { id: 1, name: "Ahmad Naufal", nisn: "0012116001" },
   { id: 2, name: "Siti Rahayu", nisn: "0012116002" },
   { id: 3, name: "Budi Santoso", nisn: "0012116003" },
+  { id: 4, name: "Nur Aini", nisn: "0012116004" },
+  { id: 5, name: "Deddy Pratama", nisn: "0012116005" },
 ];
 
 const PRESENCE_STATUSES = ["Sakit", "Ijin", "Alpha"];
