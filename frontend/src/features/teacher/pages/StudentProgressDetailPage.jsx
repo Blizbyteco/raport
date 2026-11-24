@@ -19,6 +19,7 @@ import {
 
 import PageHeader from "@/shared/layout/PageHeader";
 import Button from "@/shared/ui/button/Button";
+import Breadcrumb from "@/shared/ui/navigation/Breadcrumb";
 import Select from "@/shared/ui/form/Select";
 import Table from "@/shared/ui/data-display/Table";
 import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
@@ -141,6 +142,14 @@ const StudentProgressDetailPage = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Beranda", path: "/teacher" },
+          { label: "Evaluasi" },
+          { label: "Perkembangan Siswa" },
+        ]}
+      />
+
       <div className="space-y-4">
         <Button
           variant="ghost"

@@ -4,6 +4,7 @@ import { ChevronLeft, FileText, Save } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import Textarea from "@/shared/ui/form/Textarea";
+import Breadcrumb from "@/shared/ui/navigation/Breadcrumb";
 import ClassBanner from "../ui/ClassBanner";
 import LearningCard from "../ui/LearningCard";
 import useDailyLessons from "../hooks/useDailyLessons";
@@ -27,6 +28,7 @@ const ClassroomPage = () => {
   const [deletingLessonId, setDeletingLessonId] = useState(null);
   const [studentPresence, setStudentPresence] = useState({});
   const [isSaved, setIsSaved] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
 
   const { data } = useDailyLessons(classSubjectId);
   const downloadReport = useDownloadClassroomReport();
@@ -62,6 +64,13 @@ const ClassroomPage = () => {
         Kembali
       </Button>
 
+      <Breadcrumb
+        items={[
+          { label: "Beranda", path: "/teacher" },
+          { label: meta.classroom?.name ?? "Kelas" },
+        ]}
+      />
+
       <ClassBanner data={meta} />
 
       <section className="space-y-3">
@@ -79,12 +88,6 @@ const ClassroomPage = () => {
               isDeleting={deletingLessonId === history.id}
             />
           ))}
-
-          {!histories.length && (
-            <p className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted">
-              Belum ada pembelajaran yang dicatat.
-            </p>
-          )}
         </div>
       </section>
 
@@ -133,6 +136,7 @@ const ClassroomPage = () => {
                           <input
                             type="radio"
                             name={`presensi-${student.id}`}
+                            disabled={isClosed}
                             checked={studentPresence[student.id] === status}
                             onChange={() => togglePresence(student.id, status)}
                             className="size-4 accent-primary"
@@ -164,18 +168,36 @@ const ClassroomPage = () => {
           rows={3}
         />
 
-        <div className="flex justify-end">
-          <Button icon={Save} onClick={() => setIsSaved(true)}>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="danger"
+            disabled={isClosed}
+            onClick={() => setIsClosed(true)}
+          >
+            Liburkan Kelas
+          </Button>
+          <Button
+            icon={Save}
+            disabled={isClosed}
+            onClick={() => setIsSaved(true)}
+          >
             Save
           </Button>
         </div>
       </div>
+
+      {isClosed && (
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
+          Kelas ditutup karena guru tidak hadir.
+        </div>
+      )}
 
       {isSaved && (
         <div className="flex justify-end">
           <Button
             variant="outline"
             icon={FileText}
+            disabled={isClosed}
             isLoading={downloadReport.isPending}
             onClick={() => downloadReport.mutate(classSubjectId)}
           >

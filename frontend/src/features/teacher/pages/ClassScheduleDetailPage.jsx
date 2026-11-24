@@ -11,6 +11,7 @@ import {
 
 import Button from "@/shared/ui/button/Button";
 import Textarea from "@/shared/ui/form/Textarea";
+import Breadcrumb from "@/shared/ui/navigation/Breadcrumb";
 import SummaryCard from "../ui/SummaryCard";
 import PresenceReport from "../ui/PresenceReport";
 
@@ -65,6 +66,14 @@ const ClassScheduleDetailPage = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Beranda", path: "/teacher" },
+          { label: "Kelas" },
+          { label: "Jadwal Kelas" },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"

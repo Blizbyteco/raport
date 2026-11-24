@@ -16,6 +16,7 @@ import Input from "@/shared/ui/form/Input";
 import PageHeader from "@/shared/layout/PageHeader";
 import SummaryCard from "../ui/SummaryCard";
 import Table from "@/shared/ui/data-display/Table";
+import Breadcrumb from "@/shared/ui/navigation/Breadcrumb";
 import useHomeroomClasses from "../hooks/useHomeroomClasses";
 import useTeacherClassDetail from "../hooks/useTeacherClassDetail";
 import useTeacherClassProgress from "../hooks/useTeacherClassProgress";
@@ -94,6 +95,13 @@ const HomeroomMonitoringPage = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Beranda", path: "/teacher" },
+          { label: classInfo.name ?? "Monitoring Kelas" },
+        ]}
+      />
+
       <PageHeader
         title="Monitoring Siswa"
         description="Pantau perkembangan pemahaman siswa dari seluruh mata pelajaran."

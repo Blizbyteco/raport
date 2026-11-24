@@ -8,7 +8,8 @@ const isDetailPage = (pathname) => {
   return (
     segments[0] === "teacher" &&
     segments[1] === "class" &&
-    segments.length === 3
+    segments.length === 3 &&
+    segments[2] !== "monitoring"
   );
 };
 
