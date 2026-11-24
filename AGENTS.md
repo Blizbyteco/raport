@@ -9,7 +9,7 @@ Monorepo with two independently deployed applications:
 | Path       | Stack                                | Role                                    |
 | ---------- | ------------------------------------ | --------------------------------------- |
 | `api/`     | Laravel 12 (PHP 8.2+) + Sanctum      | REST API, auth, PDF report generation   |
-| `frontend/`| React 19 + Vite + Tailwind CSS v4    | SPA (admin + teacher dashboards)        |
+| `frontend/`| React 19 + Vite + Tailwind CSS v4    | SPA (admin, teacher, foundation-leader) |
 
 Both must be running for the app to work. Auth is **session/cookie based** (Sanctum SPA mode), not bearer tokens.
 
@@ -26,18 +26,19 @@ raport/
 │   ├── docker/entrypoint.sh    # waits for DB, migrate, seed-if-empty, php-fpm
 │   ├── app/
 │   │   ├── Console/Commands/   # db:seed-if-empty (first-boot seeding gate)
-│   │   ├── Http/Controllers/   # 19 controllers (REST resources + dashboard/profile/attendance/reports)
+│   │   ├── Http/Controllers/   # 20 controllers (REST resources + dashboard/profile/attendance/reports)
+│   │   ├── Http/Middleware/    # EnsureLeaderReadOnly (leader read-only guard)
 │   │   ├── Http/Resources/     # API resources
 │   │   ├── Models/             # Eloquent models (see app/Models/relations.txt)
 │   │   └── Providers/
 │   ├── config/             # cors.php, sanctum.php, database.php, session.php
 │   ├── database/
-│   │   ├── migrations/     # 22 migrations
-│   │   └── seeders/        # demo/dummy data (users, students, lessons, ...)
+│   │   ├── migrations/     # 24 migrations
+│   │   └── seeders/        # demo/dummy data (users, students, lessons, foundation officials, ...)
 │   ├── resources/views/
 │   │   └── reports/        # classroom.blade.php, student-report.blade.php (DomPDF)
 │   ├── routes/
-│   │   ├── api.php         # all authenticated endpoints (auth:sanctum)
+│   │   ├── api.php         # authenticated endpoints (auth:sanctum + leader read-only)
 │   │   └── web.php         # POST /login (session login)
 │   └── .docs/
 │       ├── API.md              # full endpoint documentation (source of truth)
@@ -57,16 +58,17 @@ raport/
 
 ---
 
-## 3. Environment & Tooling (verified working on this machine)
+## 3. Environment & Tooling
 
-- PHP: the default `php` on PATH is phpbrew 8.3.30 **without `ext-iconv`**, which breaks `composer install`. Use Homebrew PHP instead: `/opt/homebrew/opt/php@8.3/bin/php`. `composer -V` → 2.8.6 at `/usr/local/bin/composer`.
+- PHP: on macOS the default `php` on PATH is phpbrew 8.3.30 **without `ext-iconv`**, which breaks `composer install`; use Homebrew PHP (`/opt/homebrew/opt/php@8.3/bin/php`, composer 2.8.6 at `/usr/local/bin/composer`). On Windows `php` (8.3) is on PATH and works for `artisan`/`pint`.
 - Node v24 / npm 11.
-- Docker 28 + Compose v2 available; `docker compose up --build` deploys the full stack (see §4).
-- MySQL/MariaDB **is running** on `127.0.0.1:3306` (root). DB name expected: `api` (per `api/.env.example`).
+- Docker 28 + Compose v2 available on the original dev machine; `docker compose up --build` deploys the full stack (see §4).
+- MySQL/MariaDB expected on `127.0.0.1:3306` (root), DB name `api` (per `api/.env.example`). Start it before running migrations.
 - Frontend dev server: `http://localhost:5173` (hard-coded in `api/config/cors.php` allowed_origins).
 - Backend dev server: `http://localhost:8000` (matches `frontend/.env` `VITE_API_URL`).
+- Current Windows workspace: MySQL/MariaDB, Docker and `pdo_sqlite` are **not** available, so `artisan migrate`/`artisan test` cannot run locally; verify DB-backed work via CI or a machine with those services.
 
-Prefer prefixing Composer/Artisan with the Homebrew PHP when the phpbrew iconv warning blocks commands:
+Prefer prefixing Composer/Artisan with the Homebrew PHP (macOS) when the phpbrew iconv warning blocks commands:
 
 ```bash
 /opt/homebrew/opt/php@8.3/bin/php /usr/local/bin/composer install
@@ -86,6 +88,8 @@ cp .env.example .env                                                # configure 
 /opt/homebrew/opt/php@8.3/bin/php artisan migrate --seed            # schema + demo data
 /opt/homebrew/opt/php@8.3/bin/php artisan serve                     # http://localhost:8000
 ```
+
+On Windows, `php` is on PATH — run `php artisan ...` from `api/` (no Homebrew prefix).
 
 ### Frontend (`frontend/`)
 
@@ -107,7 +111,7 @@ docker compose down -v        # stop and wipe the database
 - On API container start, `api/docker/entrypoint.sh` waits for MySQL, runs `php artisan migrate --force`, generates `APP_KEY` if missing, then runs `php artisan db:seed-if-empty` (new artisan command: full `DatabaseSeeder` chain, skipped when users already exist — seeders are not idempotent).
 - Frontend is built with `VITE_API_URL=""` (same-origin); the bundled nginx (`frontend/docker/nginx.conf`) serves the SPA and proxies `/api`, `/sanctum`, `/up` and `POST /login` to the PHP-FPM container.
 - Optional overrides (ports, passwords, `APP_KEY`): copy `docker-compose.env.example` to `.env` at the repo root.
-- Demo login after first boot: usernames from `UserSeeder` (e.g. `ach.ubaidillah`), password `password`. An admin account is also seeded: username `admin`, password `password`.
+- Demo login after first boot: usernames from `UserSeeder` (e.g. `ach.ubaidillah`), password `password`. Admin: `admin`; head of foundation (leader): `pimpinan` — both password `password`.
 - Seeding only happens on a **first boot** (`db:seed-if-empty` skips when `users` exist). On an already-seeded database, new/changed users require a manual run: `docker compose exec api php artisan db:seed --class=UserSeeder` (`UserSeeder` is idempotent via `updateOrCreate`).
 
 ### Tests / Quality
@@ -145,20 +149,20 @@ npm run build
 - **Framework**: Laravel 12, PSR-4 `App\` → `app/`. Uses `bootstrap/app.php` (no `Kernel.php`) with `$middleware->statefulApi()`.
 - **Auth**: Sanctum SPA cookie auth.
   - `POST /login` lives in `routes/web.php` (`AuthController@login`), logs in via the `web` guard and regenerates the session. There is **no** `/api/login` and **no** token issuance.
-  - Everything in `routes/api.php` is wrapped in `auth:sanctum`.
+  - Everything in `routes/api.php` is wrapped in `auth:sanctum` + `EnsureLeaderReadOnly`.
   - Frontend must send `withCredentials: true` + `withXSRFToken: true` (already done in `frontend/src/shared/api/Axios.js`).
   - `GET /api/user` and `GET /api/profile` return the same authenticated-user shape, including `nip`.
-- **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars) plus nested/manual routes for placements, lessons, progress, attendance, dashboard, profile and reports. The `classes` resource binds `{schoolClass}` explicitly so `SchoolClassController` receives the resolved model. See `routes/api.php` and `.docs/API.md`.
+- **Controllers**: standard `apiResource` for master data (academic-years, classes, teachers, subjects, students, extracurriculars, foundation-officials) plus nested/manual routes for placements, lessons, progress, attendance, dashboard, profile and reports. The `classes` resource binds `{schoolClass}` explicitly so `SchoolClassController` receives the resolved model. `EnsureLeaderReadOnly` wraps the whole `auth:sanctum` group. See `routes/api.php` and `.docs/API.md`.
   - Class `students_count` / `subjects_count` are scoped to the active academic year; `grade_level` accepts 7–12.
   - `GET /api/students` and `GET /api/teachers` support `per_page` (default 20, max 200); the SPA sends `per_page=200` for admin lists and member pickers.
   - Classroom PDF accepts optional `period=monthly|semester`, `month=YYYY-MM`, and `semester=ganjil|genap`; omitting them keeps the unfiltered report. `monthly` requires a concrete `YYYY-MM`.
   - Evaluation `notes` is one string (last non-empty `teacher_note`), not a per-lesson object/array; the UI reads it directly.
-- **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`.
-- **Roles**: `users.role` enum = `teacher | admin | leader`. `leader` is the head of the foundation (yayasan): read-only access to every module (`EnsureLeaderReadOnly` middleware rejects non-GET API calls except own profile/logout). Seeds create teacher users plus demo `admin` and `pimpinan` (leader) accounts, all with password `password`.
-- **Foundation structure**: `foundation_officials` table + `/api/foundation-officials` CRUD (`FoundationOfficialController`) backs the admin "Struktur Yayasan" page; `FoundationOfficialSeeder` provides demo officials. Officials form a self-referencing hierarchy via nullable `parent_id` (`null` = puncak struktur); `GET` is readable by every role and the SPA renders it as a tree.
-- **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`). `UserSeeder` also creates an admin account: username `admin`, password `password`, role `admin`.
-  - Individual seeders are **not idempotent** (`create()`/`insert()` without dedupe), so re-running `db:seed` on a populated DB fails. Exception: `UserSeeder` uses `updateOrCreate` and is safe to re-run.
-  - `php artisan db:seed-if-empty` runs `DatabaseSeeder` only when `users` is empty; the Docker entrypoint uses it on first boot. A redeploy therefore does **not** create new users on an existing DB — run `php artisan db:seed --class=UserSeeder` manually for that.
+- **Models / relations**: `app/Models/relations.txt` is the canonical ER sketch. Key chain: `AcademicYear → ClassSubject/ClassStudent → SchoolClass → Subject/DailyLesson → StudentDailyProgress → Student`. `FoundationOfficial → FoundationOfficial` (self-referencing `parent`/`children`).
+- **Roles**: `users.role` enum = `teacher | admin | leader`. `leader` is the head of the foundation (yayasan): read-only access to every module (`EnsureLeaderReadOnly` middleware rejects non-GET API calls except own profile/logout; the SPA hides mutation actions via `usePermissions`). Seeds create teacher users plus demo `admin` and `pimpinan` (leader) accounts, all with password `password`. The foundation tree is readable by every authenticated role.
+- **Foundation structure**: `foundation_officials` table (`parent_id` self-FK, `nullOnDelete`) + `FoundationOfficial` model (`parent`/`children`) + `/api/foundation-officials` CRUD (`FoundationOfficialController`). Officials form a hierarchy via nullable `parent_id` (`null` = puncak struktur); `GET` returns a flat list and is readable by every role, and the SPA builds the tree client-side. `parent_id` must reference an existing official; `update` additionally rejects self/descendant cycles, and deleting an official promotes direct reports to the top. `FoundationOfficialSeeder` seeds a demo Pembina → Ketua → Sekretaris/Bendahara/Anggota chain (idempotent via `updateOrCreate`).
+- **Seed data**: `DatabaseSeeder` seeds teachers, students, classes, subjects, placements, lessons, progress, attendance, and foundation officials. Seeded teacher password is `password`; usernames are the email-style slugs in `UserSeeder.php` (e.g. `ach.ubaidillah`). `UserSeeder` also creates an `admin` account and a `pimpinan` leader account ("Pimpinan Yayasan"), both with password `password`.
+  - Individual seeders are **not idempotent** (`create()`/`insert()` without dedupe), so re-running `db:seed` on a populated DB fails. Exceptions: `UserSeeder` and `FoundationOfficialSeeder` use `updateOrCreate` and are safe to re-run.
+  - `php artisan db:seed-if-empty` runs `DatabaseSeeder` only when `users` is empty; the Docker entrypoint uses it on first boot. A redeploy therefore does **not** create new users on an existing DB — run `php artisan db:seed --class=UserSeeder` manually for that. On an existing DB after the hierarchy migration, run `php artisan db:seed --class=FoundationOfficialSeeder` to populate demo `parent_id` links.
 - **PDF reports**: `barryvdh/laravel-dompdf` rendering `resources/views/reports/*.blade.php` via `ReportController`.
 - **Style**: follow existing controllers/models; run Pint before finishing.
 
@@ -174,18 +178,20 @@ npm run build
 - **Theme tokens live in `src/index.css`** (`@theme inline`): use `bg-background`, `bg-card`, `text-foreground`, `bg-primary`, `text-muted`, `text-danger`, `bg-success`, etc. Never use arbitrary colors like `bg-[#123456]`.
 - Data fetching pattern: `features/<feature>/api/*Api.js` → `features/<feature>/hooks/use*.js` (TanStack Query) → consumed in `pages/`.
   - API-wired features: `academic-year`, `class`, `subjects`, `teacher`, `students`, `teachers`, `extracurriculars`, `foundation`, `student-placement`, `teacher-placement`, `attendance`, `dashboard`, `profiles`, and teacher module hooks.
-  - Two-way audit is green: every backend endpoint has a real frontend consumer, and every frontend API call maps to a backend route. Detail endpoints are used by the existing edit modals (`/profile`, classes, subjects, extracurriculars); `GET /teacher/classes/{schoolClass}` feeds homeroom monitoring.
+  - Two-way audit: every frontend API call maps to a backend route, and each wired feature consumes its endpoints. Detail endpoints are used by the existing edit modals (`/profile`, classes, subjects, extracurriculars); `GET /teacher/classes/{schoolClass}` feeds homeroom monitoring. (`GET /api/foundation-officials/{id}` exists but the tree uses the list endpoint.)
   - Legacy mock stores (`features/students/ui/studentList.js`, `features/teachers/ui/teacherList.js`) and JSON files in `src/shared/data/` are unused; do not reintroduce them for new work.
   - Admin CSV import/export uses `src/shared/lib/csv.js` (no XLSX dependency); templates and current filtered rows are downloaded client-side. Import creates records sequentially through the resource endpoints (no bulk backend endpoint).
   - Extracurricular member assignment UI lives in `features/extracurriculars` and uses the nested teacher/student endpoints for the active academic year.
   - Admin `students`/`teachers` detail/edit routes are ID-based (`/dashboard/students/:id`, `/dashboard/teachers/:id`). Fields are locked until "Ubah data" is clicked; delete confirmation is available in the table and detail page.
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). `leader` lands on `/dashboard` (read-only); no `/dashboard` loop. Login at `/login`.
-  - Foundation structure is a tree: admins/leaders manage it at `/dashboard/foundation` (`FoundationStructurePage`), while every role (including `teacher`) can view the read-only tree at `/foundation` (`FoundationTreePage`). Both render the shared `features/foundation/ui/FoundationTree` component built from the flat `GET /api/foundation-officials` list plus `parent_id`.
+  - Foundation structure is a tree: admins/leaders see the management page at `/dashboard/foundation` (`FoundationStructurePage`, admins can edit while leaders are read-only), and every role (including `teacher`) can view the read-only tree at `/foundation` (`FoundationTreePage`). Both render the shared `features/foundation/ui/FoundationTree` component built from the flat `GET /api/foundation-officials` list plus `parent_id`.
   - Teacher class routes are keyed by `classSubjectId`: `/teacher/class/:classSubjectId`, `/progress/create`, `/progress/:dailyLessonId`, `/evaluation`, `/evaluation/:studentId`, `/attendance`, `/attendance/new`, `/attendance/:attendanceId/edit`, `/attendance/history`, `/attendance/history/:attendanceId`.
   - Homeroom monitoring: `/teacher/class/monitoring/:classId` (with `/teacher/class/monitoring` selecting the first class).
   - Monthly classroom PDF download is disabled until `activeMonth` is a concrete `YYYY-MM`; the unfiltered report remains available.
   - Teacher placement detail: `/dashboard/teacher-placement/:classId`.
+- Permissions: `usePermissions()` (`features/auth/hooks/usePermissions.js`) returns `isReadOnly` (leader) and `canManage` (admin only). Pages use `canManage` to hide create/edit/delete/import controls; the API still enforces this server-side.
+- Sidebar (`src/shared/layout/Sidebar.jsx`) filters items by `user.role`; the Yayasan section sends admins/leaders to `/dashboard/foundation` and teachers to `/foundation`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
 - Admin edit/delete actions (tables and cards) use the shared `Tooltip` for labels (`Ubah data ...`, `Hapus data ...`) instead of native `title` attributes.
 
@@ -205,6 +211,6 @@ Do not introduce new dependencies or a new design system unless explicitly reque
 - Do not touch `.kilo/` (agent worktree metadata).
 - Make changes in the correct app (`api/` vs `frontend/`); keep them independent.
 - When changing backend routes/controllers, update `api/.docs/API.md` if behavior/contract changes.
-- After backend changes run `php artisan test` (currently 4 passing tests / 15 assertions, including `RoleFeatureSmokeTest`) and Pint; after frontend changes run `npm run lint` and `npm run build`.
+- After backend changes run `php artisan test` (feature coverage lives in `RoleFeatureSmokeTest`) and Pint; after frontend changes run `npm run lint` and `npm run build`.
 - Migrations must succeed on a **fresh** database (Docker runs `php artisan migrate --force` on every start). Don't create a table that another migration already creates without a `Schema::hasTable()` guard.
 - Never add secrets to the repo; keep credentials in `api/.env` / `frontend/.env`.
