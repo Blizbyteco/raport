@@ -1,6 +1,13 @@
 import Button from "@/shared/ui/button/Button";
 import Tooltip from "@/shared/ui/feedback/Tooltip";
-import { Pencil, SportShoe, Trash2, Users } from "lucide-react";
+import {
+  GraduationCap,
+  Pencil,
+  SportShoe,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
 const ExtracurricularCard = ({ excul, onEdit, onDelete, onManage }) => {
   return (
@@ -22,21 +29,33 @@ const ExtracurricularCard = ({ excul, onEdit, onDelete, onManage }) => {
           {excul.is_active === false && (
             <p className="mt-1 text-xs font-medium text-danger">Tidak aktif</p>
           )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <GraduationCap className="size-3.5" aria-hidden="true" />
+              {excul.teachers_count ?? 0} pembina
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="size-3.5" aria-hidden="true" />
+              {excul.students_count ?? 0} anggota
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <Button
-          variant="outline"
-          size="S"
-          icon={Users}
-          onClick={onManage}
-          aria-label={`Atur anggota ${excul.name}`}
-        >
-          Atur anggota
-        </Button>
+        <div className="flex items-center gap-1 transition-opacity max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
+          <Tooltip label="Atur anggota ekstrakurikuler">
+            <Button
+              variant="ghost"
+              size="S"
+              icon={UserPlus}
+              iconOnly
+              onClick={onManage}
+              aria-label={`Atur anggota ${excul.name}`}
+            />
+          </Tooltip>
 
-        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Tooltip label="Ubah data ekstrakurikuler">
             <Button
               variant="ghost"
@@ -47,6 +66,7 @@ const ExtracurricularCard = ({ excul, onEdit, onDelete, onManage }) => {
               aria-label={`Ubah data ${excul.name}`}
             />
           </Tooltip>
+
           <Tooltip label="Hapus data ekstrakurikuler">
             <Button
               variant="ghost"

@@ -1,7 +1,9 @@
 import api from "@/shared/api/Axios";
 
-export const getExtracurriculars = async () => {
-  const response = await api.get("/api/extracurriculars");
+export const getExtracurriculars = async (academicYearId) => {
+  const response = await api.get("/api/extracurriculars", {
+    params: academicYearId ? { academic_year_id: academicYearId } : {},
+  });
   return response.data;
 };
 

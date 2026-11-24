@@ -776,8 +776,16 @@ Mengelola master ekstrakurikuler.
 ## 8.1 Get Extracurriculars
 
 ```http
-GET /api/extracurriculars
+GET /api/extracurriculars?academic_year_id=1
 ```
+
+Mengambil daftar ekstrakurikuler beserta jumlah guru pembina (`teachers_count`) dan jumlah siswa anggota (`students_count`).
+
+### Query Parameters
+
+| Parameter          | Type    | Required | Description                                                        |
+| ------------------ | ------- | -------- | ------------------------------------------------------------------ |
+| `academic_year_id` | integer | No       | Batasi jumlah pembina/anggota ke tahun ajaran ini; tanpa filter = semua tahun ajaran. |
 
 ---
 

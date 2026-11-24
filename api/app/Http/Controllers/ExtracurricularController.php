@@ -7,9 +7,34 @@ use Illuminate\Http\Request;
 
 class ExtracurricularController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validated = $request->validate([
+            'academic_year_id' => [
+                'nullable',
+                'exists:academic_years,id',
+            ],
+        ]);
+
+        $academicYearId = $validated['academic_year_id'] ?? null;
+
         $extracurriculars = Extracurricular::query()
+            ->withCount([
+                'teachers' => fn ($query) => $query->when(
+                    $academicYearId,
+                    fn ($countQuery) => $countQuery->where(
+                        'academic_year_id',
+                        $academicYearId
+                    )
+                ),
+                'students' => fn ($query) => $query->when(
+                    $academicYearId,
+                    fn ($countQuery) => $countQuery->where(
+                        'academic_year_id',
+                        $academicYearId
+                    )
+                ),
+            ])
             ->orderBy('name')
             ->get();
 
@@ -59,7 +84,7 @@ class ExtracurricularController extends Controller
         $extracurricular->delete();
 
         return response()->json([
-            'message' => 'Ekstrakurikuler berhasil dihapus.'
+            'message' => 'Ekstrakurikuler berhasil dihapus.',
         ]);
     }
 }

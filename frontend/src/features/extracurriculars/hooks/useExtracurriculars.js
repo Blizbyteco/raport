@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getExtracurriculars } from "../api/extracurricularApi";
 
-const useExtracurriculars = () => {
+const useExtracurriculars = (academicYearId) => {
   return useQuery({
-    queryKey: ["extracurriculars"],
-    queryFn: getExtracurriculars,
+    queryKey: ["extracurriculars", academicYearId ?? null],
+    queryFn: () => getExtracurriculars(academicYearId),
   });
 };
 

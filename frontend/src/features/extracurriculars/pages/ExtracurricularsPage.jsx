@@ -9,6 +9,7 @@ import PageHeader from "@/shared/layout/PageHeader";
 
 import ExtracurricularCard from "../ui/ExtracurricularCard";
 import ExtracurricularMembersModal from "../ui/ExtracurricularMembersModal";
+import useActiveAcademicYear from "@/features/academic-year/hooks/useActiveAcademicYear";
 import useExtracurricular from "../hooks/useExtracurricular";
 import useExtracurriculars from "../hooks/useExtracurriculars";
 import useCreateExtracurricular from "../hooks/useCreateExtracurricular";
@@ -25,7 +26,8 @@ const ExtracurricularsPage = () => {
   const [managing, setManaging] = useState(null);
   const [search, setSearch] = useState("");
 
-  const { data, isLoading, isError } = useExtracurriculars();
+  const { data: activeAcademicYear } = useActiveAcademicYear();
+  const { data, isLoading, isError } = useExtracurriculars(activeAcademicYear?.id);
   const { data: extracurricularDetail } = useExtracurricular(editing?.id);
   const createMutation = useCreateExtracurricular();
   const updateMutation = useUpdateExtracurricular();
