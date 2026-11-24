@@ -1,10 +1,6 @@
-import Button from "@/shared/ui/button/Button";
-import { BookOpen, Plus, Users } from "lucide-react";
-import { useNavigate } from "react-router";
+import { BookOpen, Users } from "lucide-react";
 
 const ClassBanner = ({ data }) => {
-  const navigate = useNavigate();
-
   return (
     <div className="bg-card p-6 border border-border rounded-xl">
       <div className="flex items-center gap-2 mb-2">
@@ -26,9 +22,6 @@ const ClassBanner = ({ data }) => {
             </span>
           </div>
         </div>
-        <Button onClick={() => navigate("progress/create")} icon={Plus}>
-          Catat Pembelajaran
-        </Button>
       </div>
     </div>
   );

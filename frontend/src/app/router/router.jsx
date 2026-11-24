@@ -21,6 +21,7 @@ import StudentPlacementAddPage from "@/features/student-placement/pages/StudentP
 import ExtracurricularsPage from "@/features/extracurriculars/pages/ExtracurricularsPage";
 import TeacherHomePage from "@/features/teacher/pages/TeacherHomePage";
 import ClassroomPage from "@/features/teacher/pages/ClassroomPage";
+import ClassScheduleDetailPage from "@/features/teacher/pages/ClassScheduleDetailPage";
 import LearningProgressCreatePage from "@/features/teacher/pages/LearningProgressCreatePage";
 import HomeroomMonitoringPage from "@/features/teacher/pages/HomeroomMonitoringPage";
 import TeacherPlacementPage from "@/features/teacher-placement/pages/TeacherPlacementPage";
@@ -160,6 +161,10 @@ const Routers = () => {
               <Route
                 path="class/monitoring"
                 element={<HomeroomMonitoringPage />}
+              />
+              <Route
+                path="class/:classSubjectId/schedule"
+                element={<ClassScheduleDetailPage />}
               />
             </Route>
           </Route>

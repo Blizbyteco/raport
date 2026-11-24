@@ -99,6 +99,7 @@ const menuList = [
         icon: HomeIcon,
         path: "/teacher",
         roles: ["teacher"],
+        exact: true,
       },
       {
         label: "Monitoring Kelas",
@@ -183,7 +184,7 @@ const Sidebar = ({ collapsed, onToggle, isMobileOpen, onNavigation }) => {
                       const hasChildren = menu.children?.length > 0;
                       const isOpen = openMenus[menu.label];
                       const isParentActive =
-                        menu.path === "/dashboard"
+                        menu.exact || menu.path === "/dashboard"
                           ? currentLocation === menu.path
                           : currentLocation === menu.path ||
                             currentLocation.startsWith(`${menu.path}/`);

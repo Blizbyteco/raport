@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ClipboardCheck, FileText } from "lucide-react";
+import { ChevronLeft, FileText } from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
 import ClassBanner from "../ui/ClassBanner";
 import LearningCard from "../ui/LearningCard";
+import ClassSchedule from "../ui/ClassSchedule";
 import useDailyLessons from "../hooks/useDailyLessons";
 import useDeleteDailyLesson from "../hooks/useDeleteDailyLesson";
 import useDownloadClassroomReport from "../hooks/useDownloadClassroomReport";
@@ -34,50 +35,19 @@ const ClassroomPage = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <Button
+        variant="ghost"
+        size="S"
+        icon={ChevronLeft}
+        onClick={() => navigate("/teacher")}
+        className="-ml-2"
+      >
+        Kembali
+      </Button>
+
       <ClassBanner data={meta} />
 
-      <section className="space-y-6">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-foreground">
-            Riwayat Pembelajaran
-          </h2>
-          <p className="mt-1 text-sm font-normal text-muted">
-            Catatan pembelajaran dan perkembangan siswa.
-          </p>
-        </div>
-
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              icon={ClipboardCheck}
-              onClick={() =>
-                navigate(`/teacher/class/${classSubjectId}/attendance/history`)
-              }
-            >
-              Absensi Siswa
-            </Button>
-
-            <Button
-              variant="outline"
-              icon={FileText}
-              onClick={() =>
-                navigate(`/teacher/class/${classSubjectId}/evaluation`)
-              }
-            >
-              Evaluasi
-            </Button>
-          </div>
-
-          <Button
-            variant="outline"
-            icon={FileText}
-            isLoading={downloadReport.isPending}
-            onClick={() => downloadReport.mutate(classSubjectId)}
-          >
-            Cetak Laporan
-          </Button>
-        </div>
-
+      <section className="space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted">Memuat riwayat pembelajaran...</p>
         ) : isError ? (
@@ -108,6 +78,19 @@ const ClassroomPage = () => {
           </div>
         )}
       </section>
+
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          icon={FileText}
+          isLoading={downloadReport.isPending}
+          onClick={() => downloadReport.mutate(classSubjectId)}
+        >
+          Cetak Laporan
+        </Button>
+      </div>
+
+      <ClassSchedule />
     </div>
   );
 };
