@@ -44,6 +44,12 @@ const menuList = [
         path: "/dashboard/foundation",
         roles: ["admin", "leader"],
       },
+      {
+        label: "Struktur Yayasan",
+        icon: Landmark,
+        path: "/foundation",
+        roles: ["teacher"],
+      },
     ],
   },
   {

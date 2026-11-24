@@ -1662,7 +1662,7 @@ DELETE /api/attendances/{attendance}
 
 # 19. Foundation Officials
 
-Mengelola struktur pengurus yayasan (pembina, ketua, sekretaris, bendahara, anggota).
+Mengelola struktur pengurus yayasan (pembina, ketua, sekretaris, bendahara, anggota) dalam bentuk hierarki. Setiap pengurus dapat memiliki satu atasan langsung melalui `parent_id`; pengurus tanpa `parent_id` menjadi puncak struktur. Endpoint `GET` dapat diakses oleh semua role (admin, leader, teacher).
 
 ## 19.1 Get Foundation Officials
 
@@ -1670,7 +1670,7 @@ Mengelola struktur pengurus yayasan (pembina, ketua, sekretaris, bendahara, angg
 GET /api/foundation-officials
 ```
 
-Diurutkan berdasarkan `sort_order` lalu `name`.
+Mengembalikan daftar datar (flat) yang diurutkan berdasarkan `sort_order` lalu `name`. Setiap item menyertakan `parent_id` sehingga klien dapat menyusun tampilan pohon. Nilai `parent_id` menjadi `null` bila pengurus berada di puncak struktur (atau atasannya dihapus).
 
 ## 19.2 Create Foundation Official
 
@@ -1687,20 +1687,22 @@ POST /api/foundation-officials
     "period": "2025-2030",
     "phone": "081300000001",
     "email": "ketua@yayasan.test",
+    "parent_id": 1,
     "sort_order": 1
 }
 ```
 
 ### Fields
 
-| Field        | Type    | Required | Description                          |
-| ------------ | ------- | -------- | ------------------------------------ |
-| `name`       | string  | Yes      | Nama lengkap pengurus; maks. 100     |
-| `position`   | string  | Yes      | Jabatan dalam struktur; maks. 100    |
-| `period`     | string  | No       | Periode jabatan; maks. 50            |
-| `phone`      | string  | No       | Nomor telepon; maks. 30              |
-| `email`      | string  | No       | Alamat email                         |
-| `sort_order` | integer | No       | Urutan tampil pada struktur yayasan  |
+| Field        | Type    | Required | Description                                      |
+| ------------ | ------- | -------- | ------------------------------------------------ |
+| `name`       | string  | Yes      | Nama lengkap pengurus; maks. 100                 |
+| `position`   | string  | Yes      | Jabatan dalam struktur; maks. 100                |
+| `period`     | string  | No       | Periode jabatan; maks. 50                        |
+| `phone`      | string  | No       | Nomor telepon; maks. 30                          |
+| `email`      | string  | No       | Alamat email                                     |
+| `parent_id`  | integer | No       | ID atasan langsung; `null` = puncak struktur     |
+| `sort_order` | integer | No       | Urutan tampil di antara saudara sekandung        |
 
 ## 19.3 Get Foundation Official
 
@@ -1714,13 +1716,15 @@ GET /api/foundation-officials/{foundationOfficial}
 PUT /api/foundation-officials/{foundationOfficial}
 ```
 
-Payload dan aturan field sama dengan create.
+Payload dan aturan field sama dengan create. `parent_id` tidak boleh menunjuk ke pengurus itu sendiri atau ke bawahannya (siklus struktur ditolak dengan `422`).
 
 ## 19.5 Delete Foundation Official
 
 ```http
 DELETE /api/foundation-officials/{foundationOfficial}
 ```
+
+Bawahan langsung dari pengurus yang dihapus tidak ikut terhapus; `parent_id` mereka otomatis menjadi `null` sehingga naik ke puncak struktur.
 
 ### Response
 

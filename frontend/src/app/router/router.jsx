@@ -38,6 +38,7 @@ import CreateAcademicYearPage from "@/features/academic-year/pages/CreateAcademi
 import AcademicYearsPage from "@/features/academic-year/pages/AcademicYearsPage";
 import EditAcademicYearPage from "@/features/academic-year/pages/EditAcademicYearPage";
 import FoundationStructurePage from "@/features/foundation/pages/FoundationStructurePage";
+import FoundationTreePage from "@/features/foundation/pages/FoundationTreePage";
 
 const Routers = () => {
   return (
@@ -188,6 +189,7 @@ const Routers = () => {
         <Route element={<ProtectedRoute roles={["admin", "teacher", "leader"]} />}>
           <Route element={<MainLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/foundation" element={<FoundationTreePage />} />
           </Route>
         </Route>
       </Routes>
