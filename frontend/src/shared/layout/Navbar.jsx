@@ -2,10 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Menu, User, LogOut, Sun, Moon } from "lucide-react";
 import useAuth from "@/features/auth/hooks/useAuth";
+import { toast } from "@/shared/ui/feedback/toast";
 
 const Navbar = ({ onMobileMenuToggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    toast.success("Anda berhasil keluar.");
+    navigate("/login", { replace: true });
+  };
 
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
@@ -131,7 +138,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
                 {/* Logout */}
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-danger transition-colors hover:bg-danger/10"
                 >
                   <LogOut className="size-4 shrink-0" />

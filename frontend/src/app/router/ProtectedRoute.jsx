@@ -1,17 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router";
+
 import useAuth from "@/features/auth/hooks/useAuth";
-
-const getHomePath = (role) => {
-  if (role === "teacher") {
-    return "/teacher";
-  }
-
-  if (role === "admin" || role === "leader") {
-    return "/dashboard";
-  }
-
-  return "/profile";
-};
+import getHomePath from "@/shared/lib/homePath";
 
 const ProtectedRoute = ({ roles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();

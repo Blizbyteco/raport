@@ -185,6 +185,8 @@ npm run build
   - Admin `students`/`teachers` detail/edit routes are ID-based (`/dashboard/students/:id`, `/dashboard/teachers/:id`). Fields are locked until "Ubah data" is clicked; delete confirmation is available in the table and detail page.
 - All API calls go through `src/shared/api/Axios.js` (`import.meta.env.VITE_API_URL`, credentials + CSRF enabled).
 - Router: `src/app/router/router.jsx` with role guards (`admin` under `/dashboard`, `teacher` under `/teacher`, shared `/profile`). `leader` lands on `/dashboard` (read-only); no `/dashboard` loop. Login at `/login`.
+  - Entry redirects: `/` (`RootRedirect`) sends an authenticated user to their role home via `shared/lib/homePath.js` (`/dashboard` for admin/leader, `/teacher` for teacher) and an unauthenticated visitor to `/login`. Visiting `/login` while already authenticated redirects to the same home, so the login form never shows for a live session. `ProtectedRoute` redirects unauthenticated deep links to `/login` (carrying `state.from`).
+  - Session expiry: the axios interceptor (`shared/api/Axios.js`) turns a `401` on non-auth requests into an `auth:expired` window event, which `AuthContext` listens to and clears the user; `ProtectedRoute` then redirects to `/login`.
   - Foundation structure is a tree: admins/leaders see the management page at `/dashboard/foundation` (`FoundationStructurePage`, admins can edit while leaders are read-only), and every role (including `teacher`) can view the read-only tree at `/foundation` (`FoundationTreePage`). Both render the shared `features/foundation/ui/FoundationTree` component built from the flat `GET /api/foundation-officials` list plus `parent_id`.
   - Teacher class routes are keyed by `classSubjectId`: `/teacher/class/:classSubjectId`, `/progress/create`, `/progress/:dailyLessonId`, `/evaluation`, `/evaluation/:studentId`, `/attendance`, `/attendance/new`, `/attendance/:attendanceId/edit`, `/attendance/history`, `/attendance/history/:attendanceId`.
   - Homeroom monitoring: `/teacher/class/monitoring/:classId` (with `/teacher/class/monitoring` selecting the first class).
@@ -193,6 +195,7 @@ npm run build
 - Permissions: `usePermissions()` (`features/auth/hooks/usePermissions.js`) returns `isReadOnly` (leader) and `canManage` (admin only). Pages use `canManage` to hide create/edit/delete/import controls; the API still enforces this server-side.
 - Sidebar (`src/shared/layout/Sidebar.jsx`) filters items by `user.role`; the Yayasan section sends admins/leaders to `/dashboard/foundation` and teachers to `/foundation`.
 - Reuse `src/shared/ui/*` primitives (Button, Input, Select, Textarea, Table, Badge, Modal, Alert, FileUpload, Tooltip).
+- Toast feedback: `src/shared/ui/feedback/toast.js` (store + `toast.success/danger/warning/info`, deduped) with `Toaster` mounted in `App.jsx` renders app-wide notifications; auth messages (login success/failure, logout, expired session, redirects) use it. `Alert` remains the inline/static message component.
 - Admin edit/delete actions (tables and cards) use the shared `Tooltip` for labels (`Ubah data ...`, `Hapus data ...`) instead of native `title` attributes.
 
 Do not introduce new dependencies or a new design system unless explicitly requested.

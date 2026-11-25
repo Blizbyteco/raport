@@ -1,20 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LockKeyhole, UserRound } from "lucide-react";
 
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import Button from "@/shared/ui/button/Button";
 import Input from "@/shared/ui/form/Input";
-import Alert from "@/shared/ui/feedback/Alert";
+import { toast } from "@/shared/ui/feedback/toast";
+import getHomePath from "@/shared/lib/homePath";
 
 import useAuth from "@/features/auth/hooks/useAuth";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, user, loading, isAuthenticated } = useAuth();
 
-  const [showAlert, setShowAlert] = useState(false);
+  const [hasJustLoggedIn, setHasJustLoggedIn] = useState(false);
 
   const {
     register,
@@ -28,20 +30,30 @@ const LoginPage = () => {
     },
   });
 
+  useEffect(() => {
+    if (loading || !isAuthenticated || !user) return;
+    if (hasJustLoggedIn) return;
+
+    toast.info(`Anda sudah masuk sebagai ${user.full_name}.`);
+    navigate(getHomePath(user.role), { replace: true });
+  }, [loading, isAuthenticated, user, hasJustLoggedIn, navigate]);
+
+  useEffect(() => {
+    if (loading || isAuthenticated) return;
+    if (!location.state?.from) return;
+
+    toast.warning("Sesi Anda berakhir. Silakan masuk untuk melanjutkan.");
+  }, [loading, isAuthenticated, location.state]);
+
   const onSubmit = async (data) => {
-    setShowAlert(false);
-
     try {
-      const user = await login(data);
+      const loggedInUser = await login(data);
 
-      if (user.role === "admin" || user.role === "leader") {
-        navigate("/dashboard", { replace: true });
-        return;
-      }
-
-      if (user.role === "teacher") {
-        navigate("/teacher", { replace: true });
-      }
+      setHasJustLoggedIn(true);
+      toast.success(
+        `Berhasil masuk. Selamat datang, ${loggedInUser.full_name}.`,
+      );
+      navigate(getHomePath(loggedInUser.role), { replace: true });
     } catch (error) {
       const serverErrors = error.response?.data?.errors;
 
@@ -60,10 +72,23 @@ const LoginPage = () => {
       }
 
       if (serverErrors?.failed) {
-        setShowAlert(true);
+        toast.danger("Username / Password salah!");
+        return;
       }
+
+      toast.danger(
+        error.response?.data?.message ?? "Gagal masuk. Silakan coba lagi.",
+      );
     }
   };
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+        <p className="text-sm text-muted">Memeriksa sesi...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
@@ -76,17 +101,6 @@ const LoginPage = () => {
           <p className="mt-1 text-sm text-muted">
             Sistem Pendamping Perkembangan Pembelajaran
           </p>
-
-          {showAlert && (
-            <div className="mt-4">
-              <Alert
-                type="error"
-                message="Username / Password salah!"
-                duration={3000}
-                onClose={() => setShowAlert(false)}
-              />
-            </div>
-          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">

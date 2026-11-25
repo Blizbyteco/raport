@@ -43,6 +43,14 @@ const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    const handleExpired = () => setUser(null);
+
+    window.addEventListener("auth:expired", handleExpired);
+
+    return () => window.removeEventListener("auth:expired", handleExpired);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
