@@ -25,6 +25,8 @@ class StudentDailyProgressController extends Controller
         DailyLesson $dailyLesson,
         $student
     ) {
+        $this->ensureCanManageClassSubject($dailyLesson->classSubject);
+
         $validated = $request->validate([
             'score' => [
                 'required',

@@ -365,4 +365,27 @@ class RoleFeatureSmokeTest extends TestCase
         ]);
         $this->callEndpoint('delete', '/api/attendances/'.$newAttendance['id']);
     }
+
+    public function test_teacher_cannot_manage_class_subjects_they_do_not_teach(): void
+    {
+        $teacher = User::where('role', 'teacher')
+            ->whereHas('taughtSubjects')
+            ->firstOrFail();
+
+        $otherClassSubject = ClassSubject::where('teacher_id', '!=', $teacher->id)
+            ->whereNotNull('teacher_id')
+            ->firstOrFail();
+
+        $this->actingAs($teacher, 'web');
+
+        $this->postJson('/api/class-subjects/'.$otherClassSubject->id.'/lessons', [
+            'lesson_date' => '2027-05-10',
+            'title' => 'QA Forbidden Lesson',
+        ])->assertStatus(403);
+
+        $this->postJson('/api/class-subjects/'.$otherClassSubject->id.'/attendances', [
+            'date' => '2027-05-10',
+            'attendance' => [],
+        ])->assertStatus(403);
+    }
 }

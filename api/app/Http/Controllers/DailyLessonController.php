@@ -64,6 +64,8 @@ class DailyLessonController extends Controller
         Request $request,
         ClassSubject $classSubject
     ) {
+        $this->ensureCanManageClassSubject($classSubject);
+
         $validated = $request->validate([
             'lesson_date' => [
                 'required',
@@ -154,6 +156,8 @@ class DailyLessonController extends Controller
         ClassSubject $classSubject,
         DailyLesson $dailyLesson
     ) {
+        $this->ensureCanManageClassSubject($classSubject);
+
         $validated = $request->validate([
             'lesson_date' => [
                 'required',
@@ -184,6 +188,8 @@ class DailyLessonController extends Controller
         ClassSubject $classSubject,
         DailyLesson $dailyLesson
     ) {
+        $this->ensureCanManageClassSubject($classSubject);
+
         $dailyLesson->delete();
 
         return response()->json([

@@ -1004,6 +1004,8 @@ POST /api/class-subjects/{classSubject}/lessons
 
 Membuat pembelajaran sekaligus progress siswa dalam satu transaksi.
 
+Hanya guru pengampu `classSubject` tersebut (atau admin) yang boleh menambah pembelajaran; guru lain menerima `403`.
+
 ### Payload
 
 ```json
@@ -1051,7 +1053,7 @@ PUT /api/class-subjects/{classSubject}/lessons/{dailyLesson}
 }
 ```
 
-Payload tidak mengubah `progress` siswa.
+Payload tidak mengubah `progress` siswa. Hanya guru pengampu `classSubject` (atau admin) yang boleh memperbarui/menghapus pembelajaran.
 
 ---
 
@@ -1111,7 +1113,7 @@ GET /api/lessons/{dailyLesson}/progress
 PUT /api/lessons/{dailyLesson}/progress/{student}
 ```
 
-Mengubah progress yang sudah ada; progress tidak ditemukan menghasilkan 404.
+Mengubah progress yang sudah ada; progress tidak ditemukan menghasilkan 404. Hanya guru pengampu `classSubject` (atau admin) yang boleh mengubah progress.
 
 ### Payload
 
@@ -1560,7 +1562,7 @@ POST /api/class-subjects/{classSubject}/attendances
 | `attendance.*.status`    | string  | Yes      | `present`/`permission`/`sick`/`absent` |
 | `attendance.*.note`      | string  | No       | Catatan per siswa; nullable         |
 
-Absensi pada tanggal yang sama untuk class subject yang sama ditolak (422). Siswa harus berstatus aktif pada tahun ajaran class subject.
+Absensi pada tanggal yang sama untuk class subject yang sama ditolak (422). Siswa harus berstatus aktif pada tahun ajaran class subject. Hanya guru pengampu `classSubject` (atau admin) yang boleh menyimpan, mengubah, atau menghapus absensi.
 
 ### Response
 

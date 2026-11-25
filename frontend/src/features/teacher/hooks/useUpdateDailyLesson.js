@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { toast } from "@/shared/ui/feedback/toast";
+
 import { updateDailyLesson } from "../api/lessonApi";
 
 const useUpdateDailyLesson = () => {
@@ -20,6 +22,14 @@ const useUpdateDailyLesson = () => {
           variables.dailyLessonId,
         ],
       });
+
+      toast.success("Pembelajaran berhasil diperbarui.");
+    },
+
+    onError: (error) => {
+      toast.danger(
+        error.response?.data?.message ?? "Gagal memperbarui pembelajaran.",
+      );
     },
   });
 };

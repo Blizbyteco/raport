@@ -1,45 +1,34 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ChevronLeft, FileText, Save } from "lucide-react";
+import {
+  BookOpen,
+  ChevronLeft,
+  ClipboardCheck,
+  FileText,
+  History,
+  Plus,
+} from "lucide-react";
 
 import Button from "@/shared/ui/button/Button";
-import Textarea from "@/shared/ui/form/Textarea";
 import Breadcrumb from "@/shared/ui/navigation/Breadcrumb";
 import ClassBanner from "../ui/ClassBanner";
 import LearningCard from "../ui/LearningCard";
 import useDailyLessons from "../hooks/useDailyLessons";
 import useDeleteDailyLesson from "../hooks/useDeleteDailyLesson";
-import useDownloadClassroomReport from "../hooks/useDownloadClassroomReport";
-
-// Static student data for the presence table (to be replaced with real data later)
-const STUDENTS = [
-  { id: 1, name: "Ahmad Naufal", nisn: "0012116001" },
-  { id: 2, name: "Siti Rahayu", nisn: "0012116002" },
-  { id: 3, name: "Budi Santoso", nisn: "0012116003" },
-  { id: 4, name: "Nur Aini", nisn: "0012116004" },
-  { id: 5, name: "Deddy Pratama", nisn: "0012116005" },
-];
-
-const PRESENCE_STATUSES = ["Sakit", "Ijin", "Alpha"];
 
 const ClassroomPage = () => {
   const navigate = useNavigate();
   const { classSubjectId } = useParams();
   const [deletingLessonId, setDeletingLessonId] = useState(null);
-  const [studentPresence, setStudentPresence] = useState({});
-  const [isSaved, setIsSaved] = useState(false);
-  const [isClosed, setIsClosed] = useState(false);
 
-  const { data } = useDailyLessons(classSubjectId);
-  const downloadReport = useDownloadClassroomReport();
+  const { data, isLoading, isError } = useDailyLessons(classSubjectId);
   const deleteLesson = useDeleteDailyLesson();
 
   const meta = data?.meta ?? {};
   const histories = data?.data ?? [];
 
-  const togglePresence = (id, status) => {
-    setStudentPresence((prev) => ({ ...prev, [id]: status }));
-  };
+  const openCreateProgress = () =>
+    navigate(`/teacher/class/${classSubjectId}/progress/create`);
 
   const handleDeleteLesson = (lesson) => {
     if (!window.confirm(`Hapus pembelajaran "${lesson.material}"?`)) return;
@@ -73,138 +62,90 @@ const ClassroomPage = () => {
 
       <ClassBanner data={meta} />
 
-      <section className="space-y-3">
-        <div className="space-y-3">
-          {histories.map((history) => (
-            <LearningCard
-              key={history.id}
-              {...history}
-              onClick={() =>
-                navigate(
-                  `/teacher/class/${classSubjectId}/progress/${history.id}`,
-                )
-              }
-              onDelete={() => handleDeleteLesson(history)}
-              isDeleting={deletingLessonId === history.id}
-            />
-          ))}
-        </div>
-      </section>
+      <div className="flex flex-wrap gap-2">
+        <Button icon={Plus} onClick={openCreateProgress}>
+          Catat Pembelajaran
+        </Button>
 
-      <section className="space-y-3">
-        <h2 className="font-semibold text-foreground">Presensi Siswa</h2>
-        <p className="mt-1 text-sm text-muted">
-          Pilih status presensi tiap siswa.
-        </p>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-sm">
-            <thead className="bg-background/70 text-xs uppercase text-muted">
-              <tr>
-                <th className="px-5 py-3.5 font-medium">NISN</th>
-                <th
-                  className="px-5 py-3.5 font-medium"
-                  colSpan={2}
-                >
-                  Nama Siswa
-                </th>
-                <th className="px-5 py-3.5 text-right font-medium">
-                  Status
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-border">
-              {STUDENTS.map((student) => (
-                <tr key={student.id} className="hover:bg-background/50">
-                  <td className="px-5 py-4 font-medium text-foreground">
-                    {student.nisn}
-                  </td>
-                  <td
-                    className="px-5 py-4 font-medium text-foreground"
-                    colSpan={2}
-                  >
-                    {student.name}
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-4">
-                      {PRESENCE_STATUSES.map((status) => (
-                        <label
-                          key={status}
-                          className="flex items-center gap-1.5 text-sm text-foreground"
-                        >
-                          <input
-                            type="radio"
-                            name={`presensi-${student.id}`}
-                            disabled={isClosed}
-                            checked={studentPresence[student.id] === status}
-                            onChange={() => togglePresence(student.id, status)}
-                            className="size-4 accent-primary"
-                            aria-label={`Status ${status} ${student.name}`}
-                          />
-                          {status}
-                        </label>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="space-y-2">
-        <label
-          htmlFor="evaluation-field"
-          className="text-sm font-medium text-foreground"
+        <Button
+          variant="outline"
+          icon={ClipboardCheck}
+          onClick={() =>
+            navigate(`/teacher/class/${classSubjectId}/attendance/new`)
+          }
         >
-          Evaluasi
-        </label>
+          Catat Presensi
+        </Button>
 
-        <Textarea
-          id="evaluation-field"
-          placeholder="Catat evaluasi pembelajaran (opsional)..."
-          rows={3}
-        />
+        <Button
+          variant="outline"
+          icon={History}
+          onClick={() =>
+            navigate(`/teacher/class/${classSubjectId}/attendance/history`)
+          }
+        >
+          Riwayat Presensi
+        </Button>
 
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="danger"
-            disabled={isClosed}
-            onClick={() => setIsClosed(true)}
-          >
-            Liburkan Kelas
-          </Button>
-          <Button
-            icon={Save}
-            disabled={isClosed}
-            onClick={() => setIsSaved(true)}
-          >
-            Save
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          icon={FileText}
+          onClick={() =>
+            navigate(`/teacher/class/${classSubjectId}/evaluation`)
+          }
+        >
+          Evaluasi & Laporan
+        </Button>
       </div>
 
-      {isClosed && (
-        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          Kelas ditutup karena guru tidak hadir.
+      <section className="space-y-3">
+        <div>
+          <h2 className="font-semibold text-foreground">Sesi Pembelajaran</h2>
+          <p className="mt-1 text-sm text-muted">
+            Catat materi, nilai pemahaman, dan catatan siswa untuk setiap sesi.
+          </p>
         </div>
-      )}
 
-      {isSaved && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            icon={FileText}
-            disabled={isClosed}
-            isLoading={downloadReport.isPending}
-            onClick={() => downloadReport.mutate(classSubjectId)}
-          >
-            Cetak Laporan
-          </Button>
-        </div>
-      )}
+        {isLoading ? (
+          <p className="text-sm text-muted">Memuat sesi pembelajaran...</p>
+        ) : isError ? (
+          <p className="text-sm text-danger">Gagal memuat sesi pembelajaran.</p>
+        ) : histories.length > 0 ? (
+          <div className="space-y-3">
+            {histories.map((history) => (
+              <LearningCard
+                key={history.id}
+                {...history}
+                onClick={() =>
+                  navigate(
+                    `/teacher/class/${classSubjectId}/progress/${history.id}`,
+                  )
+                }
+                onDelete={() => handleDeleteLesson(history)}
+                isDeleting={deletingLessonId === history.id}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-card px-6 py-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-background text-muted">
+              <BookOpen className="size-5" />
+            </div>
+
+            <h3 className="mt-4 font-bold text-card-foreground">
+              Belum ada sesi pembelajaran
+            </h3>
+
+            <p className="mt-1 text-sm text-muted">
+              Catat sesi pertama untuk mulai mengisi progress siswa.
+            </p>
+
+            <Button className="mt-4" icon={Plus} onClick={openCreateProgress}>
+              Catat Pembelajaran
+            </Button>
+          </div>
+        )}
+      </section>
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import PageHeader from "@/shared/layout/PageHeader";
+
 import useHomeroomClasses from "../hooks/useHomeroomClasses";
+import useTeacherClasses from "../hooks/useTeacherClasses";
+import ClassCard from "../ui/ClassCard";
 import HomeroomCard from "../ui/HomeroomCard";
-import ClassSchedule from "../ui/ClassSchedule";
 
 const TeacherHomePage = () => {
   const {
@@ -10,11 +12,46 @@ const TeacherHomePage = () => {
     isError: homeroomError,
   } = useHomeroomClasses();
 
+  const {
+    data: classData,
+    isLoading: classLoading,
+    isError: classError,
+  } = useTeacherClasses();
+
   const homeroomClasses = homeroomData?.data ?? [];
+  const classSubjects = classData?.data ?? [];
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <ClassSchedule />
+      <section>
+        <PageHeader
+          title="Mata Pelajaran Saya"
+          description="Kelas dan mata pelajaran yang Anda ajar. Pilih salah satu untuk mencatat pembelajaran dan laporan sesi."
+        />
+
+        {classLoading ? (
+          <p className="mt-4 text-sm text-muted">Memuat mata pelajaran...</p>
+        ) : classError ? (
+          <p className="mt-4 text-sm text-danger">
+            Gagal memuat mata pelajaran.
+          </p>
+        ) : classSubjects.length > 0 ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+            {classSubjects.map((item) => (
+              <ClassCard
+                key={item.id}
+                id={item.id}
+                subject={item.subject}
+                classroom={item.classroom}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted">
+            Belum ada mata pelajaran yang ditugaskan.
+          </p>
+        )}
+      </section>
 
       <section>
         <PageHeader

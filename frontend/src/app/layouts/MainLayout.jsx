@@ -4,6 +4,8 @@ import Navbar from "@/shared/layout/Navbar";
 import Sidebar from "@/shared/layout/Sidebar";
 
 const isDetailPage = (pathname) => {
+  if (pathname === "/profile") return true;
+
   const segments = pathname.split("/").filter(Boolean);
   return (
     segments[0] === "teacher" &&
@@ -38,7 +40,10 @@ const MainLayout = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        <Navbar onMobileMenuToggle={() => setIsMobileOpen(!isMobileOpen)} />
+        <Navbar
+          onMobileMenuToggle={() => setIsMobileOpen(!isMobileOpen)}
+          showMenuButton={!hideSidebar}
+        />
         <main className="p-6 sm:p-8 flex-1 bg-background">
           <Outlet />
         </main>

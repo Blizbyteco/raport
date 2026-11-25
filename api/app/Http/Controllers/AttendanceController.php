@@ -50,6 +50,8 @@ class AttendanceController extends Controller
 
     public function store(Request $request, ClassSubject $classSubject): JsonResponse
     {
+        $this->ensureCanManageClassSubject($classSubject);
+
         $validated = $this->validatePayload($request);
 
         $exists = Attendance::query()
@@ -101,6 +103,8 @@ class AttendanceController extends Controller
 
     public function update(Request $request, Attendance $attendance): JsonResponse
     {
+        $this->ensureCanManageClassSubject($attendance->classSubject);
+
         $validated = $this->validatePayload($request);
 
         $this->ensureStudentsBelongToClass(
@@ -146,6 +150,8 @@ class AttendanceController extends Controller
 
     public function destroy(Attendance $attendance): JsonResponse
     {
+        $this->ensureCanManageClassSubject($attendance->classSubject);
+
         $attendance->delete();
 
         return response()->json([

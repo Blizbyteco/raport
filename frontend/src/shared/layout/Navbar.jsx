@@ -4,7 +4,7 @@ import { Menu, User, LogOut, Sun, Moon } from "lucide-react";
 import useAuth from "@/features/auth/hooks/useAuth";
 import { toast } from "@/shared/ui/feedback/toast";
 
-const Navbar = ({ onMobileMenuToggle }) => {
+const Navbar = ({ onMobileMenuToggle, showMenuButton = true }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -31,14 +31,16 @@ const Navbar = ({ onMobileMenuToggle }) => {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onMobileMenuToggle}
-            aria-label="Open sidebar"
-            className="flex size-9 items-center justify-center rounded-xl text-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary lg:hidden"
-          >
-            <Menu className="size-5" />
-          </button>
+          {showMenuButton && (
+            <button
+              type="button"
+              onClick={onMobileMenuToggle}
+              aria-label="Open sidebar"
+              className="flex size-9 items-center justify-center rounded-xl text-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary lg:hidden"
+            >
+              <Menu className="size-5" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

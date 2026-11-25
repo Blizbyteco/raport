@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { toast } from "@/shared/ui/feedback/toast";
+
 import { createAttendance } from "../api/attendanceApi";
 
 const useCreateAttendance = () => {
@@ -11,6 +13,11 @@ const useCreateAttendance = () => {
       queryClient.invalidateQueries({
         queryKey: ["attendances", variables.classSubjectId],
       });
+
+      toast.success("Absensi berhasil disimpan.");
+    },
+    onError: (error) => {
+      toast.danger(error.response?.data?.message ?? "Gagal menyimpan absensi.");
     },
   });
 };

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import {
   BadgeCheck,
   BriefcaseBusiness,
+  ChevronLeft,
   KeyRound,
   LockKeyhole,
   Save,
@@ -19,6 +21,7 @@ import {
 import Button from "@/shared/ui/button/Button";
 import Alert from "@/shared/ui/feedback/Alert";
 import Input from "@/shared/ui/form/Input";
+import getHomePath from "@/shared/lib/homePath";
 
 const roleLabel = {
   admin: "Administrator",
@@ -48,11 +51,15 @@ const getErrorMessage = (error) => {
 };
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profileData } = useProfile();
   const [activeTab, setActiveTab] = useState("profile");
   const [feedback, setFeedback] = useState(null);
   const [updatedProfile, setUpdatedProfile] = useState(null);
+
+  const homePath = getHomePath(user?.role);
+  const backTarget = homePath === "/profile" ? "/" : homePath;
 
   const profile = {
     ...(user ?? {}),
@@ -162,6 +169,16 @@ const ProfilePage = () => {
 
   return (
     <main className="min-h-screen space-y-6 bg-background text-dark">
+      <Button
+        variant="ghost"
+        size="S"
+        icon={ChevronLeft}
+        onClick={() => navigate(backTarget)}
+        className="-ml-2"
+      >
+        Kembali
+      </Button>
+
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Profile Saya</h1>
         <p className="text-sm text-muted">

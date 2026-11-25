@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { toast } from "@/shared/ui/feedback/toast";
+
 import { deleteDailyLesson } from "../api/lessonApi";
 
 const useDeleteDailyLesson = () => {
@@ -13,6 +15,14 @@ const useDeleteDailyLesson = () => {
       queryClient.invalidateQueries({
         queryKey: ["daily-lessons", variables.classSubjectId],
       });
+
+      toast.success("Pembelajaran berhasil dihapus.");
+    },
+
+    onError: (error) => {
+      toast.danger(
+        error.response?.data?.message ?? "Gagal menghapus pembelajaran.",
+      );
     },
   });
 };
