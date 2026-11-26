@@ -16,7 +16,7 @@ export const login = async ({ username, password }) => {
 };
 
 export const getCurrentUser = async () => {
-  const response = await api.get("/api/user");
+  const response = await api.get("/api/user", { timeout: 20000 });
   return response.data.user;
 };
 

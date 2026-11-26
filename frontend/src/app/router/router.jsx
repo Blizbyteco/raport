@@ -186,12 +186,17 @@ const Routers = () => {
         </Route>
 
         {/* Common */}
-        <Route element={<ProtectedRoute roles={["admin", "teacher", "leader"]} />}>
+        <Route
+          element={<ProtectedRoute roles={["admin", "teacher", "leader"]} />}
+        >
           <Route element={<MainLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/foundation" element={<FoundationTreePage />} />
           </Route>
         </Route>
+
+        {/* Unknown paths fall back to the session-aware root redirect */}
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
   );

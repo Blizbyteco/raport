@@ -3,6 +3,7 @@ import { Navigate } from "react-router";
 
 import useAuth from "@/features/auth/hooks/useAuth";
 import getHomePath from "@/shared/lib/homePath";
+import LoadingScreen from "@/shared/ui/feedback/LoadingScreen";
 import { toast } from "@/shared/ui/feedback/toast";
 
 const RootRedirect = () => {
@@ -16,11 +17,13 @@ const RootRedirect = () => {
       return;
     }
 
-    toast.success(`Selamat datang kembali, ${user.full_name}.`);
+    toast.success(
+      `Selamat datang kembali, ${user?.full_name ?? "Pengguna"}.`,
+    );
   }, [loading, isAuthenticated, user]);
 
   if (loading) {
-    return null;
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {

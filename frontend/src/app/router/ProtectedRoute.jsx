@@ -2,13 +2,14 @@ import { Navigate, Outlet, useLocation } from "react-router";
 
 import useAuth from "@/features/auth/hooks/useAuth";
 import getHomePath from "@/shared/lib/homePath";
+import LoadingScreen from "@/shared/ui/feedback/LoadingScreen";
 
 const ProtectedRoute = ({ roles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
 
   if (loading) {
-    return null;
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
