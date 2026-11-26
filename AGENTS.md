@@ -25,7 +25,7 @@ raport/
 ├── api/                    # Laravel backend
 │   ├── docker/entrypoint.sh    # waits for DB, migrate, seed-if-empty, php-fpm
 │   ├── app/
-│   │   ├── Console/Commands/   # db:seed-if-empty (first-boot seeding gate)
+│   │   ├── Console/Commands/   # db:seed-if-empty (first-boot seeding gate), db:reset (wipe + admin)
 │   │   ├── Http/Controllers/   # 20 controllers (REST resources + dashboard/profile/attendance/reports)
 │   │   ├── Http/Middleware/    # EnsureLeaderReadOnly (leader read-only guard)
 │   │   ├── Http/Resources/     # API resources
@@ -113,6 +113,7 @@ docker compose down -v        # stop and wipe the database
 - Optional overrides (ports, passwords, `APP_KEY`): copy `docker-compose.env.example` to `.env` at the repo root.
 - Demo login after first boot: usernames from `UserSeeder` (e.g. `ach.ubaidillah`), password `password`. Admin: `admin`; head of foundation (leader): `pimpinan` — both password `password`.
 - Seeding only happens on a **first boot** (`db:seed-if-empty` skips when `users` exist). On an already-seeded database, new/changed users require a manual run: `docker compose exec api php artisan db:seed --class=UserSeeder` (`UserSeeder` is idempotent via `updateOrCreate`).
+- Reset production data: `bash deploy/reset-db.sh` (auto-detects Docker or local `php artisan`; runs `migrate:fresh` and creates one admin, no demo data). Direct command: `php artisan db:reset [--no-admin] [--admin-username=...] [--admin-name=...] [--admin-nip=...] [--admin-password=...] [--force]`; random password printed when omitted. See `deploy/README.md` §8.
 
 ### Tests / Quality
 

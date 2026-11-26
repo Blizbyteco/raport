@@ -165,3 +165,50 @@ Set the `HEALTHCHECK_URL` secret to e.g. `http://YOUR_HOST/up` if you also want 
 | Deploy runs but the app still serves old code | Check `docker compose ps` / `docker compose logs api` on the server; the API container regenerates `APP_KEY` on boot if it is empty — set `APP_KEY` in the server `.env`. |
 | Login fails in the browser | Set `SESSION_DOMAIN` + `SANCTUM_STATEFUL_DOMAINS` to the real domain and `APP_URL` accordingly. |
 | Deploy skipped (`deploy already in progress`) | A previous deploy still holds the lock: `sudo fuser $HOME/.cache/raport-deploy.lock`. |
+
+---
+
+## 8. Reset database (production)
+
+`deploy/reset-db.sh` drops **every table**, re-runs migrations, and creates a single admin account.
+No demo students/classes/lessons are inserted. Backend command: `php artisan db:reset`.
+
+> **Destructive.** All data and sessions are deleted. Back up first:
+>
+> ```bash
+> cd /home/ubuntu/raport
+> docker compose exec -T db sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > backup-$(date +%F).sql
+> ```
+
+The script auto-detects Docker (when compose is available for this repo) and falls back to
+local `php artisan` only when Docker is not available. If the Docker stack is installed but not
+running, it stops with an error instead of guessing — start it with `docker compose up -d` or
+pass `--local` (which uses the DB settings in `api/.env`). Deploy the commit that adds this script
+**before** running it, otherwise the old image does not have the `db:reset` command.
+
+```bash
+cd /home/ubuntu/raport
+
+# interactive: prints the target DB and asks you to type RESET
+bash deploy/reset-db.sh
+
+# non-interactive with a password you choose
+DB_RESET_ADMIN_PASSWORD='RahasiaKuat123' bash deploy/reset-db.sh --yes
+
+# custom admin identity
+bash deploy/reset-db.sh --yes \
+  --admin-username=admin \
+  --admin-name='Administrator Sekolah' \
+  --admin-nip=900000000000000000
+
+# no admin account (next API start will seed demo data via db:seed-if-empty)
+bash deploy/reset-db.sh --no-admin --yes
+```
+
+Options: `--docker`, `--local`, `--yes`, `--no-admin`, `--admin-username=`, `--admin-name=`,
+`--admin-nip=`, `--admin-password=`. Env vars: `DB_RESET_ADMIN_USERNAME`, `DB_RESET_ADMIN_NAME`,
+`DB_RESET_ADMIN_NIP`, `DB_RESET_ADMIN_PASSWORD`, `CONFIRM_DB_RESET=1`, `DB_RESET_MODE=docker|local`.
+
+When no password is given, a random 16-character password is generated and printed once — copy it
+and change it after logging in.
+
